@@ -1,0 +1,13 @@
+[package]
+name = "juiz_opencv"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+opencv = {version="0.84", default-features=false, features=["highgui", "videoio", "imgproc", "imgcodecs", "clang-runtime"]}
+juiz_sdk = { workspace = true }
+# mat2image = { version="0.2" }
+cv-convert = { version="0.25" , default-features=false, features=[ "opencv_0-84", 'image_0-24', 'ndarray_0-15' ] }

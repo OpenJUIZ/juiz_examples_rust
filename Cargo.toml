@@ -1,0 +1,30 @@
+[workspace]
+resolver = "2"
+members = [
+    "process/talker",
+    "process/listener",
+    "process/increment_process",
+    "process/decrement_process",
+    "container/example_container",
+    "container/example_container_get",
+    "container/example_container_increment",
+    "component/example_component",
+    "component/juiz_opencv",
+]
+# juiz_opencv は OpenCV のインストールが必要なので、既定のビルド対象から外している。
+# ビルドするときは `cargo build -p juiz_opencv` を使う。
+default-members = [
+    "process/talker",
+    "process/listener",
+    "process/increment_process",
+    "process/decrement_process",
+    "container/example_container",
+    "container/example_container_get",
+    "container/example_container_increment",
+    "component/example_component",
+]
+
+[workspace.dependencies]
+juiz_sdk = "0.0.9"
+juiz_core = "0.0.9"
+anyhow = "1"
