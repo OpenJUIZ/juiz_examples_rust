@@ -82,8 +82,10 @@ juiz container-process call "http://127.0.0.1:8000/container_process/increment0:
 
 ```sh
 juiz -f example_component.conf -d
-juiz process call "http://127.0.0.1:8000/process/proc01::example_component_increment" '{"arg1": 1}' -p
+juiz process call "http://127.0.0.1:8000/process/proc0::example_component_increment" '{"arg1": 1}' -p
 # => CapsulePtr((value:Value(2), option: []))
+juiz container-process call "http://127.0.0.1:8000/container_process/add0::example_component_container_add:container0" '{"arg1": 5}' -p
+# => CapsulePtr((value:Value(105), option: []))
 ```
 
 ### OpenCV: juiz_opencv (任意)
