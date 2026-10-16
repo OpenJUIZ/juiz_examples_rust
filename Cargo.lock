@@ -550,9 +550,9 @@ dependencies = [
 
 [[package]]
 name = "juiz_macro"
-version = "0.0.13"
+version = "0.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb562bdb21760f6065e83661f295d676fee1942c4d367a720c0dcdc2c495ad3b"
+checksum = "b9570c25648dc6a32d0f44f7616bf422d483e35f2db4304ec427e96894d0cfa3"
 dependencies = [
  "anyhow",
  "litrs",
@@ -573,9 +573,9 @@ dependencies = [
 
 [[package]]
 name = "juiz_sdk"
-version = "0.0.13"
+version = "0.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1063e6ceca17b94755d5eede9c90e027cc7ec888f06709330a742c51aef712a"
+checksum = "1f3c794343a3f7d2a3f86c08a42a3aa4897954f50cc19f1175214a970e042964"
 dependencies = [
  "anyhow",
  "env_logger",
