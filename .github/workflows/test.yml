@@ -1,0 +1,46 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # README の手順で使う juiz_app の版。Cargo.toml の juiz_sdk と合わせる
+  JUIZ_VERSION: "0.0.16"
+
+jobs:
+  examples:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      # juiz_app は Python を組み込むので、ビルドに Python の開発用ファイルが要る
+      - name: Python の開発用ファイルを入れる (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y python3-dev
+      # macOS の python3 は 3.14 で、juiz_app 0.0.16 が使う PyO3 0.22 は 3.13 までしか対応していない
+      - name: Python 3.13 を入れる (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: juiz コマンドのキャッシュ
+        id: juiz-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/juiz
+          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}-py313
+      - name: juiz コマンドをインストールする
+        if: steps.juiz-cache.outputs.cache-hit != 'true'
+        run: cargo install juiz_app --version "$JUIZ_VERSION" --locked
+      - uses: Swatinem/rust-cache@v2
+      - name: サンプルをビルドする
+        run: cargo build
+      - name: サンプルを動かして結果を確かめる
+        run: python3 tests/test_examples.py

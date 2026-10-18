@@ -107,6 +107,7 @@ juiz -f opencv.conf -d
 | `container/` | Container (状態を持つ) と ContainerProcess のサンプル |
 | `component/` | 複数の要素を 1 つのライブラリにまとめた Component のサンプル |
 | `*.conf` | 各サンプルを動かすための juiz の設定ファイル |
+| `tests/test_examples.py` | 上のサンプルを起動して呼び出し、結果を確かめるテスト (`cargo build` のあと `python3 tests/test_examples.py`)。CI でも実行する |
 
 ## 自分で書くときは
 
