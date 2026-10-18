@@ -8,7 +8,7 @@ on:
 
 env:
   # README の手順で使う juiz_app の版。Cargo.toml の juiz_sdk と合わせる
-  JUIZ_VERSION: "0.0.16"
+  JUIZ_VERSION: "0.0.17"
 
 jobs:
   examples:
@@ -23,7 +23,7 @@ jobs:
       - name: Python の開発用ファイルを入れる (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-dev
-      # macOS の python3 は 3.14 で、juiz_app 0.0.16 が使う PyO3 0.22 は 3.13 までしか対応していない
+      # macOS の python3 は 3.14 で、juiz_app 0.0.17 が使う PyO3 0.22 は 3.13 までしか対応していない
       - name: Python 3.13 を入れる (macOS)
         if: runner.os == 'macOS'
         uses: actions/setup-python@v5
