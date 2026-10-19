@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.16) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.17) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -46,7 +46,7 @@ juiz process call "http://127.0.0.1:8000/process/increment0::increment_process" 
 # => CapsulePtr((value:Value(4), option: []))
 ```
 
-API の定義 (OpenAPI) は http://127.0.0.1:8000/api-docs/openapi.json で取得できます。crates.io 版の juiz_app では Swagger UI (`/docs`) は無効になっています。
+Swagger UI は http://127.0.0.1:8000/docs/ で開けます。API の定義 (OpenAPI) は http://127.0.0.1:8000/api-docs/openapi.json で取得できます。
 
 `decrement_process.conf` も同じ使い方です (1 を引く Process)。
 
@@ -118,7 +118,7 @@ juiz -f opencv.conf -d
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.0.16"
+juiz_sdk = "0.0.17"
 ```
 
 ```rust
