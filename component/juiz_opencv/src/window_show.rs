@@ -7,7 +7,7 @@ use opencv::{
 };
 
 #[juiz_component_container_process(container_type = "window")]
-fn window_show(container: &mut ContainerImpl<CvWindow>, img: DynamicImage) -> JuizResult<Capsule> {
+fn window_show(container: &mut ContainerImpl<CvWindow>, img: DynamicImage) -> JuizResult<JuizResponse> {
     let window_name = container.name.as_str();
     println!("imshow_function(name={window_name:})");
     let mat = Mat::try_from_cv(img)?;
@@ -15,7 +15,7 @@ fn window_show(container: &mut ContainerImpl<CvWindow>, img: DynamicImage) -> Ju
         Ok(()) => {
             println!("ok");
             wait_key(0)?;
-            Ok(Capsule::empty())
+            Ok(JuizResponse::empty())
         }
         Err(e) => {
             println!("error: {e:?}");

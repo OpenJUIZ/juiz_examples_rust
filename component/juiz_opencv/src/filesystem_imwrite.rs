@@ -18,7 +18,7 @@ fn filesystem_imwrite(
     _container: &mut ContainerImpl<CvFilesystem>,
     img: DynamicImage,
     file_name: String,
-) -> JuizResult<Capsule> {
+) -> JuizResult<JuizResponse> {
     println!("imwrite_function(file_name={file_name:})");
 
     let mat = Mat::try_from_cv(img)?;
@@ -26,7 +26,7 @@ fn filesystem_imwrite(
     match imwrite(file_name.as_str(), &mat, &params) {
         Ok(_) => {
             println!("ok");
-            Ok(Capsule::empty())
+            Ok(JuizResponse::empty())
         }
         Err(e) => {
             println!("error: {e:?}");

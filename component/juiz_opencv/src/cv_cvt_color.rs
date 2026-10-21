@@ -7,7 +7,7 @@ use opencv::{
 };
 
 #[juiz_component_process]
-fn cv_cvt_color(img: DynamicImage, code: String) -> JuizResult<Capsule> {
+fn cv_cvt_color(img: DynamicImage, code: String) -> JuizResult<JuizResponse> {
     println!("cvt_color_function called");
     let mat = Mat::try_from_cv(img)?;
     let mut out_img = Mat::default();

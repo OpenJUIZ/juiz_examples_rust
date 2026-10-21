@@ -6,7 +6,7 @@ pub unsafe extern "Rust" fn manifest() -> ProcessManifest {
         .add_int_arg("arg1", "The output will be 'arg1 - 1'.", 1)
 }
 
-fn decrement_process(args: CapsuleMap) -> JuizResult<Capsule> {
+fn decrement_process(args: CapsuleMap) -> JuizResult<JuizResponse> {
     log::trace!("increment_process({:?}) called", args);
     let i = args.get_int("arg1")?;
     return Ok(jvalue!(i - 1).into());
@@ -14,7 +14,7 @@ fn decrement_process(args: CapsuleMap) -> JuizResult<Capsule> {
 
 #[no_mangle]
 pub unsafe extern "Rust" fn process_factory(
-) -> JuizResult<(ProcessManifest, fn(CapsuleMap) -> JuizResult<Capsule>)> {
+) -> JuizResult<(ProcessManifest, fn(CapsuleMap) -> JuizResult<JuizResponse>)> {
     env_logger::init();
     Ok((manifest(), decrement_process))
     // process_factory_create(manifest(), decrement_process)
