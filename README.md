@@ -125,7 +125,7 @@ juiz_sdk = "0.0.20"
 use juiz_sdk::prelude::*;
 
 #[juiz_process]
-fn my_process(arg1: i64) -> JuizResult<Capsule> {
+fn my_process(arg1: i64) -> JuizResult<JuizResponse> {
     Ok(jvalue!(arg1 * 2).into())
 }
 ```

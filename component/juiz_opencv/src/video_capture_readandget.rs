@@ -9,7 +9,7 @@ use opencv::{
 use cv_convert::TryFromCv;
 
 #[juiz_component_container_process(container_type = "video_capture")]
-fn video_capture_readandget(container: &mut ContainerImpl<CvVideoCapture>) -> JuizResult<Capsule> {
+fn video_capture_readandget(container: &mut ContainerImpl<CvVideoCapture>) -> JuizResult<JuizResponse> {
     println!("video_capture_readandget() called");
     let mut frame: Mat = Mat::default();
     let mut dst: Mat = Mat::default();
@@ -22,6 +22,6 @@ fn video_capture_readandget(container: &mut ContainerImpl<CvVideoCapture>) -> Ju
         AlgorithmHint::ALGO_HINT_DEFAULT,
     )?;
     let img: DynamicImage = DynamicImage::try_from_cv(dst)?;
-    let value: Capsule = img.into();
+    let value: JuizResponse = img.into();
     return Ok(value);
 }

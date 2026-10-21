@@ -3,7 +3,7 @@ use juiz_sdk::prelude::*;
 use opencv::{core::Mat, videoio::VideoCaptureTrait};
 
 #[juiz_component_container_process(container_type = "video_capture")]
-fn video_capture_read(container: &mut ContainerImpl<CvVideoCapture>) -> JuizResult<Capsule> {
+fn video_capture_read(container: &mut ContainerImpl<CvVideoCapture>) -> JuizResult<JuizResponse> {
     let mut frame: Mat = container.image.take().unwrap();
     container.camera.read(&mut frame)?;
     container.image = Some(frame);

@@ -11,7 +11,7 @@ use juiz_sdk::prelude::*;
         }
     }
 )]
-fn listener(arg1: String) -> JuizResult<Capsule> {
+fn listener(arg1: String) -> JuizResult<JuizResponse> {
     log::trace!("listener({:}) called", arg1);
     println!("listener: {:}", arg1);
     return Ok(jvalue!("Hello World").into());

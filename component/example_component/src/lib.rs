@@ -1,7 +1,7 @@
 use juiz_sdk::prelude::*;
 
 #[juiz_component_process]
-fn example_component_increment(arg1: i64) -> JuizResult<Capsule> {
+fn example_component_increment(arg1: i64) -> JuizResult<JuizResponse> {
     log::trace!("increment_process({:?}) called", arg1);
     return Ok(jvalue!(arg1 + 1).into());
 }
@@ -22,7 +22,7 @@ fn example_component_container(initial_value: i64) -> JuizResult<Box<ExampleComp
 #[juiz_component_container_process(container_type = "example_component_container")]
 fn example_component_container_get(
     container: &mut ContainerImpl<ExampleComponentContainer>,
-) -> JuizResult<Capsule> {
+) -> JuizResult<JuizResponse> {
     println!("example_component_container_get()");
     Ok(jvalue!(container.value).into())
 }
@@ -30,7 +30,7 @@ fn example_component_container_get(
 #[juiz_component_container_process(container_type = "example_component_container")]
 fn example_component_container_increment(
     container: &mut ContainerImpl<ExampleComponentContainer>,
-) -> JuizResult<Capsule> {
+) -> JuizResult<JuizResponse> {
     println!("example_component_container_increment()");
     container.value = container.value + 1;
     Ok(jvalue!(container.value).into())
@@ -46,7 +46,7 @@ fn example_component_container_increment(
 fn example_component_container_add(
     container: &mut ContainerImpl<ExampleComponentContainer>,
     arg1: i64,
-) -> JuizResult<Capsule> {
+) -> JuizResult<JuizResponse> {
     println!("example_component_container_add({arg1})");
     container.value = container.value + arg1;
     Ok(jvalue!(container.value).into())
