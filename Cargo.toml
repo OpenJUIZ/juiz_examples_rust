@@ -25,6 +25,6 @@ default-members = [
 ]
 
 [workspace.dependencies]
-juiz_sdk = "0.0.18"
-juiz_core = "0.0.18"
+juiz_sdk = "0.0.20"
+juiz_core = "0.0.20"
 anyhow = "1"

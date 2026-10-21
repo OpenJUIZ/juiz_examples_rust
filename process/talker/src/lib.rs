@@ -4,7 +4,7 @@ use juiz_sdk::prelude::*;
 ///
 /// "Hello World" という文字列を出力します。
 #[juiz_process(description = "This is talker process.")]
-fn talker() -> JuizResult<Capsule> {
+fn talker() -> JuizResult<JuizResponse> {
     log::trace!("talker() called");
     let string_value = "Hello World";
     println!("talker: {:}", string_value);
