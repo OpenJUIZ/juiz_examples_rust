@@ -88,6 +88,57 @@ juiz container-process call "http://127.0.0.1:8000/container_process/add0::examp
 # => CapsulePtr((value:Value(105), option: []))
 ```
 
+### ネームスペース: 同じ構成を並べて動かす
+
+ネームスペースを使うと、同じ名前の Process を 1 つの System に並べて置けます。ID はクラスの後ろ・名前の前にネームスペースが入った `http://127.0.0.1:8000/process/robot1/talker0::talker` の形になります。
+
+#### 1 つの設定ファイルで 2 台分を置く: namespace.conf
+
+`talker0` と `listener0` を `robot1` と `robot2` の 2 つのネームスペースに置き、Topic `chatter` でつなぎます。Topic 名もネームスペースの中で解決される (`robot1/chatter` と `robot2/chatter`) ので、それぞれの `listener0` には同じネームスペースの `talker0` の出力だけが届きます。
+
+```sh
+juiz -f namespace.conf -d
+# talker: Hello from robot1
+# listener: Hello from robot1
+# talker: Hello from robot2
+# listener: Hello from robot2
+# ...
+```
+
+別のターミナルから、ネームスペースの列つきで一覧を出したり、ネームスペース付きの ID で呼び出したりできます。
+
+```sh
+juiz process list --long
+# NAMESPACE  NAME       TYPE      ID
+# /robot1    talker0    talker    http://127.0.0.1:8000/process/robot1/talker0::talker
+# ...
+juiz process call "http://127.0.0.1:8000/process/robot1/talker0::talker" '{"message": "Hi"}' -p
+# => CapsulePtr((value:Value("Hi"), option: []))
+```
+
+設定ファイルでは各要素に `namespace` を書きます (`/` で始めるとルートからの絶対指定)。トップレベルに `namespace` を書くと、全体の既定のネームスペースになります。
+
+#### 同じ設定ファイルを 2 つ起動する: --namespace
+
+`--namespace` を付けると、設定ファイルの既定のネームスペースを置き換えて起動できます。2 つのターミナルで次のように起動すると、2 つ目は 1 つ目のサブシステムになり (8001 番ポートで待ち受け)、1 つの System として扱えます。
+
+```sh
+juiz -f increment_process.conf --namespace robot1 -d
+```
+
+```sh
+juiz -f increment_process.conf --namespace robot2 -d
+```
+
+```sh
+juiz process list --namespace robot2
+# => ["http://127.0.0.1:8001/process/robot2/increment0::increment_process"]
+juiz process call "http://127.0.0.1:8000/process/robot1/increment0::increment_process" '{"arg1": 1}' -p
+# => CapsulePtr((value:Value(2), option: []))
+juiz process call "http://127.0.0.1:8001/process/robot2/increment0::increment_process" '{"arg1": 10}' -p
+# => CapsulePtr((value:Value(11), option: []))
+```
+
 ### OpenCV: juiz_opencv (任意)
 
 カメラ画像の取得・表示・保存を行うサンプルです。OpenCV (と libclang) のインストールが必要なので、`cargo build` の対象からは外しています。

@@ -50,6 +50,10 @@ CASES = [
           f"{BASE}/container_process/get0::example_component_container_get:container0", "{}", "-p"],
          "Value(105)"),
     ], None),
+    # 同じ名前の talker0 / listener0 を robot1 と robot2 に置く。Topic もネームスペースごとに分かれる
+    ("namespace.conf", [
+        (["process", "call", f"{BASE}/process/robot1/talker0::talker", '{"message": "Hi"}', "-p"], "Value(\"Hi\")"),
+    ], ["listener: Hello from robot1", "listener: Hello from robot2"]),
 ]
 
 
@@ -90,7 +94,7 @@ def wait_for_output(path: str, expected: str, timeout: float) -> bool:
     return False
 
 
-def run_case(juiz: str, conf: str, calls: list, expected_output: str | None) -> bool:
+def run_case(juiz: str, conf: str, calls: list, expected_output: str | list[str] | None) -> bool:
     print(f"--- {conf}", flush=True)
     wait_for_port_free(PORT, 30)
     kwargs = {}
@@ -109,9 +113,12 @@ def run_case(juiz: str, conf: str, calls: list, expected_output: str | None) -> 
                 print(f"NG: {expected!r} が出力に含まれていません\n{result.stderr}", file=sys.stderr)
                 ok = False
                 break
-        if ok and expected_output is not None and not wait_for_output(log_path, expected_output, 15):
-            print(f"NG: juiz の出力に {expected_output!r} が含まれていません", file=sys.stderr)
-            ok = False
+        if isinstance(expected_output, str):
+            expected_output = [expected_output]
+        for expected in expected_output or []:
+            if ok and not wait_for_output(log_path, expected, 15):
+                print(f"NG: juiz の出力に {expected!r} が含まれていません", file=sys.stderr)
+                ok = False
 
         server.send_signal(signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT)
         try:
@@ -133,12 +140,85 @@ def run_case(juiz: str, conf: str, calls: list, expected_output: str | None) -> 
     return ok
 
 
+def start_server(juiz: str, args: list, log) -> subprocess.Popen:
+    kwargs = {}
+    if os.name == "nt":
+        kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    return subprocess.Popen([juiz, *args], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, **kwargs)
+
+
+def stop_server(server: subprocess.Popen) -> bool:
+    server.send_signal(signal.CTRL_BREAK_EVENT if os.name == "nt" else signal.SIGINT)
+    try:
+        server.wait(timeout=15)
+        return True
+    except subprocess.TimeoutExpired:
+        server.kill()
+        server.wait()
+        print("NG: Ctrl+C で juiz が止まりませんでした", file=sys.stderr)
+        return False
+
+
+def run_two_namespaces(juiz: str) -> bool:
+    """README の「同じ設定ファイルを 2 つ起動する」の手順。
+
+    increment_process.conf を --namespace robot1 と robot2 で起動し、2 つ目は 1 つ目のサブシステムになる。
+    """
+    print("--- increment_process.conf --namespace robot1 / robot2", flush=True)
+    wait_for_port_free(PORT, 30)
+    wait_for_port_free(PORT + 1, 30)
+    r1 = f"{BASE}/process/robot1/increment0::increment_process"
+    r2 = f"http://127.0.0.1:{PORT + 1}/process/robot2/increment0::increment_process"
+    servers = []
+    logs = []
+    ok = True
+    try:
+        for ns in ["robot1", "robot2"]:
+            log = tempfile.NamedTemporaryFile("w+", suffix=".log", delete=False)
+            logs.append(log.name)
+            servers.append(start_server(juiz, ["-f", "increment_process.conf", "--namespace", ns, "-d"], log))
+            log.close()
+            if ns == "robot1":
+                wait_for_port(PORT, 60, servers[0])
+            else:
+                wait_for_port(PORT + 1, 60, servers[1])
+        # 2 つ目の登録の手続き中に問い合わせると互いの応答待ちで止まることがある (juiz#159) ので少し待つ
+        time.sleep(3)
+        calls = [
+            (["process", "list", "--namespace", "robot2"], r2),
+            (["process", "call", r1, '{"arg1": 1}', "-p"], "Value(2)"),
+            (["process", "call", r2, '{"arg1": 10}', "-p"], "Value(11)"),
+        ]
+        for args, expected in calls:
+            result = subprocess.run([juiz, *args], cwd=ROOT, capture_output=True, text=True, timeout=60)
+            print(f"juiz {' '.join(args)}\n  {result.stdout.strip()}", flush=True)
+            if result.returncode != 0 or expected not in result.stdout:
+                print(f"NG: {expected!r} が出力に含まれていません\n{result.stderr}", file=sys.stderr)
+                ok = False
+                break
+    except Exception as e:
+        print(f"NG: {e}", file=sys.stderr)
+        ok = False
+    finally:
+        for server in reversed(servers):
+            if server.poll() is None and not stop_server(server):
+                ok = False
+        for path in logs:
+            if not ok:
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    print(f"juiz の出力:\n{f.read()}", file=sys.stderr)
+            os.unlink(path)
+    return ok
+
+
 def main() -> int:
     juiz = shutil.which("juiz")
     if juiz is None:
         print("juiz コマンドが見つかりません (cargo install juiz_app を実行してください)", file=sys.stderr)
         return 1
     failed = [conf for conf, calls, expected in CASES if not run_case(juiz, conf, calls, expected)]
+    if not run_two_namespaces(juiz):
+        failed.append("increment_process.conf --namespace")
     if failed:
         print(f"失敗したサンプル: {', '.join(failed)}", file=sys.stderr)
         return 1
