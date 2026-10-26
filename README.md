@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.21) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.22) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -307,7 +307,7 @@ juiz container-process call "http://127.0.0.1:8000/container_process/capture_sav
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.0.21"
+juiz_sdk = "0.0.22"
 ```
 
 ```rust
