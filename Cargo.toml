@@ -9,6 +9,7 @@ members = [
     "container/example_container_get",
     "container/example_container_increment",
     "component/example_component",
+    "component/example_control",
     "component/juiz_opencv",
 ]
 # juiz_opencv は OpenCV のインストールが必要なので、既定のビルド対象から外している。
@@ -22,6 +23,7 @@ default-members = [
     "container/example_container_get",
     "container/example_container_increment",
     "component/example_component",
+    "component/example_control",
 ]
 
 [workspace.dependencies]

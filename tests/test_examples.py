@@ -54,6 +54,17 @@ CASES = [
     ("namespace.conf", [
         (["process", "call", f"{BASE}/process/robot1/talker0::talker", '{"message": "Hi"}', "-p"], "Value(\"Hi\")"),
     ], ["listener: Hello from robot1", "listener: Hello from robot2"]),
+    # Container を含まない Composite。inc_twice = increment(increment(arg1))、plus_one = decrement(inc_twice(x))
+    ("composite.conf", [
+        (["process", "call", f"{BASE}/process/inc_twice0::inc_twice", '{"arg1": 3}', "-p"], "Value(5)"),
+        (["process", "call", f"{BASE}/process/plus_one0::plus_one", '{"x": 3}', "-p"], "Value(4)"),
+        (["process", "list", "--long"], "└─ arg1: inc_twice"),
+    ], None),
+    # センサ → P 制御 → モータ の CompositeContainerProcess を EC で回し、位置が目標 (1.0) に着くのを確かめる
+    ("control_loop.conf", [
+        (["container-process", "list", "--long"], "measured: dummy_sensor_read [sensor: dummy_sensor]"),
+        (["container", "list", "--long"], "motor -> core://core/container/motor0::dummy_motor"),
+    ], "position=1.000"),
 ]
 
 
