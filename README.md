@@ -235,7 +235,8 @@ ecs:
     type_name: main_loop_ec
     rate: 20.0
     bind:
-      - "core://core/container_process/follow0::follow_target:robot0"
+      # ContainerProcess は Container の名前 (container_name) も書く
+      - { name: follow0, type_name: follow_target, container_name: robot0 }
     auto_start: true
 ```
 
@@ -265,7 +266,7 @@ juiz container list --long
 # ...
 ```
 
-EC に ContainerProcess を bind するときは、`<名前>::<型名>:<Container の名前>` の形の ID で書きます。
+EC に ContainerProcess を bind するときは、`container_name` (CompositeContainer の名前) も書きます。
 
 ### OpenCV: juiz_opencv (任意)
 
