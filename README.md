@@ -1,9 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.22) を使うので、juiz のソースを手元に置かずにビルドして試せます。
-
-> データ型のサンプル (types/geometry.jidl) は juiz の次の版 (0.0.23) で入る機能を使うので、公開までは `Cargo.toml` で juiz の main のコミットを指定しています。juiz コマンドの入れ方は「[データ型](#データ型-言語をまたいで同じ型を使う)」を見てください。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.23) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -283,11 +281,11 @@ record Pose2D  { Point2D position = {"x": 0.0, "y": 0.0}; double theta = 0.0; st
 record Twist2D { double linear = 0.0; double angular = 0.0; }
 ```
 
-> データ型は juiz の次の版 (0.0.23) で入ります。公開までは、juiz コマンドを juiz の main のコミット (`Cargo.toml` の `rev` と同じもの) から入れてください。
+> データ型は juiz 0.0.23 から使えます。juiz コマンドと、Python の Process が使う pyjuiz は 0.0.23 以降を入れてください。
 >
 > ```sh
-> cargo install juiz_app --git https://github.com/OpenJUIZ/juiz --rev 359438b023cd4ba982e7c1ef6a9ddaf3c15d76ab --locked
-> pip install "pyjuiz @ git+https://github.com/OpenJUIZ/juiz@359438b023cd4ba982e7c1ef6a9ddaf3c15d76ab#subdirectory=bindings/pyjuiz"
+> cargo install juiz_app --version 0.0.23 --locked
+> pip install pyjuiz==0.0.23
 > ```
 
 Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。
@@ -405,7 +403,7 @@ juiz container-process call "http://127.0.0.1:8000/container_process/capture_sav
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.0.22"
+juiz_sdk = "0.0.23"
 ```
 
 ```rust
