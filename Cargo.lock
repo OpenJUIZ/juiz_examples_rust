@@ -107,6 +107,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "base64"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
+
+[[package]]
 name = "bit_field"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -123,6 +129,15 @@ name = "bitflags"
 version = "2.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3ded4057c258ba199e2d26386d3af3780957ecaee6c4ef4041c6b4b8b97c0b06"
+
+[[package]]
+name = "block-buffer"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2f6c7dbe95a6ed67ad9f18e57daf93a2f034c524b99fd2b76d18fdfeb6660aa"
+dependencies = [
+ "hybrid-array",
+]
 
 [[package]]
 name = "bytemuck"
@@ -173,6 +188,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap"
+version = "4.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa8876b300ab35ba921adea3dfd70157a46249b33f95c9084ae5709785478946"
+dependencies = [
+ "clap_builder",
+ "clap_derive",
+]
+
+[[package]]
+name = "clap_builder"
+version = "4.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec0797fb7aeb1406c84efac526901f7ec3ead2124f946b494e72879d4b54704d"
+dependencies = [
+ "anstream",
+ "anstyle",
+ "clap_lex",
+ "strsim",
+]
+
+[[package]]
+name = "clap_derive"
+version = "4.6.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9c751b79415d4e559e3d1fcf128e09e720eb673a06d26cf6f392d37d75b66e0"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn 3.0.7",
+]
+
+[[package]]
+name = "clap_lex"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
+
+[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -185,10 +240,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
+name = "const-oid"
+version = "0.10.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
+
+[[package]]
 name = "core_detect"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
+
+[[package]]
+name = "cpufeatures"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ca28b0ae3115b884660db4118d803791fd6756b6e88f39c0f3f7859060d7566"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "crc32fast"
@@ -229,6 +299,15 @@ name = "crunchy"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
+
+[[package]]
+name = "crypto-common"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce6e4c961d6cd6c9a86db418387425e8bdeaf05b3c8bc1411e6dca4c252f1453"
+dependencies = [
+ "hybrid-array",
+]
 
 [[package]]
 name = "cv-convert"
@@ -281,6 +360,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "10d60334b3b2e7c9d91ef8150abfb6fa4c1c39ebbcf4a81c2e346aad939fee3e"
 dependencies = [
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "digest"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1dd6dbb5841937940781866fa1281a1ff7bd3bf827091440879f9994983d5c2"
+dependencies = [
+ "block-buffer",
+ "const-oid",
+ "crypto-common",
 ]
 
 [[package]]
@@ -463,6 +553,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
+
+[[package]]
+name = "hybrid-array"
+version = "0.4.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "27f864f10dfb56725ce5ce5472bc52252c8f93a4ab86327122cebf62c5f59a17"
+dependencies = [
+ "typenum",
+]
+
+[[package]]
 name = "image"
 version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -556,10 +661,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "juiz_idl"
+version = "0.0.22"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
+dependencies = [
+ "clap",
+ "juiz_types",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "juiz_macro"
 version = "0.0.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "008a5ee9d4b79a87ab2f76ca21c6dc0b6f1413456e33d7bbdf68eb9f3336327b"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
 dependencies = [
  "anyhow",
  "litrs",
@@ -581,13 +697,14 @@ dependencies = [
 [[package]]
 name = "juiz_sdk"
 version = "0.0.22"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e14c530f74068198c9c96ca1361cfa1888965ae7486f0d61ded4d2f09079a86"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
 dependencies = [
  "anyhow",
+ "base64",
  "env_logger",
  "image",
  "juiz_macro",
+ "juiz_types",
  "log",
  "mopa",
  "nalgebra",
@@ -598,6 +715,19 @@ dependencies = [
  "serde_json",
  "thiserror 1.0.69",
  "yaml-rust2",
+]
+
+[[package]]
+name = "juiz_types"
+version = "0.0.22"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
+dependencies = [
+ "base64",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -880,6 +1010,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pose_move"
+version = "0.1.0"
+dependencies = [
+ "juiz_idl",
+ "juiz_sdk",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1085,6 +1223,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "sha2"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47d7069beb7d6ac7b9acd1039986e73443f24234f41074da099d6f994ac9ad19"
+dependencies = [
+ "cfg-if",
+ "cpufeatures",
+ "digest",
+]
+
+[[package]]
 name = "shlex"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1126,6 +1275,12 @@ name = "smallvec"
 version = "1.16.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b3dc8af474f516a851ff4bd12db780f948b9250ad37211e4eec0bccea54e01b"
+
+[[package]]
+name = "strsim"
+version = "0.11.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "syn"

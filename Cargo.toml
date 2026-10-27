@@ -5,6 +5,7 @@ members = [
     "process/listener",
     "process/increment_process",
     "process/decrement_process",
+    "process/pose_move",
     "container/example_container",
     "container/example_container_get",
     "container/example_container_increment",
@@ -19,6 +20,7 @@ default-members = [
     "process/listener",
     "process/increment_process",
     "process/decrement_process",
+    "process/pose_move",
     "container/example_container",
     "container/example_container_get",
     "container/example_container_increment",
@@ -27,6 +29,9 @@ default-members = [
 ]
 
 [workspace.dependencies]
-juiz_sdk = "0.0.22"
-juiz_core = "0.0.22"
+# データ型 (types/geometry.jidl を使うサンプル) は juiz の次の版で入るので、公開までは juiz の main のコミットを使う。
+# 公開後は juiz_sdk = "0.0.23" のような版の指定に戻す
+juiz_sdk = { git = "https://github.com/OpenJUIZ/juiz", rev = "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25" }
+juiz_core = { git = "https://github.com/OpenJUIZ/juiz", rev = "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25" }
+juiz_idl = { git = "https://github.com/OpenJUIZ/juiz", rev = "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25" }
 anyhow = "1"

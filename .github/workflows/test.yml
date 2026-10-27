@@ -7,8 +7,9 @@ on:
   workflow_dispatch:
 
 env:
-  # README の手順で使う juiz_app の版。Cargo.toml の juiz_sdk と合わせる
-  JUIZ_VERSION: "0.0.22"
+  # データ型のサンプルは juiz の次の版 (0.0.23) で入る機能を使うので、公開までは juiz の main のコミットから入れる。
+  # Cargo.toml の rev と合わせる。公開後は JUIZ_VERSION と cargo install juiz_app --version に戻す
+  JUIZ_GIT_REV: "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
 
 jobs:
   examples:
@@ -35,10 +36,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/juiz
-          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}-py313
+          key: juiz-app-${{ env.JUIZ_GIT_REV }}-${{ runner.os }}-${{ runner.arch }}-py313
       - name: juiz コマンドをインストールする
         if: steps.juiz-cache.outputs.cache-hit != 'true'
-        run: cargo install juiz_app --version "$JUIZ_VERSION" --locked
+        run: cargo install juiz_app --git https://github.com/OpenJUIZ/juiz --rev "$JUIZ_GIT_REV" --locked
+      # データ型のサンプル (typed_pose.conf) の Python の Process が pyjuiz を使う
+      - name: pyjuiz をインストールする
+        run: python3 -m pip install --user --break-system-packages "pyjuiz @ git+https://github.com/OpenJUIZ/juiz@${JUIZ_GIT_REV}#subdirectory=bindings/pyjuiz"
       - uses: Swatinem/rust-cache@v2
       - name: サンプルをビルドする
         run: cargo build
