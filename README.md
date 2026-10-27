@@ -286,8 +286,8 @@ record Twist2D { double linear = 0.0; double angular = 0.0; }
 > データ型は juiz の次の版 (0.0.23) で入ります。公開までは、juiz コマンドを juiz の main のコミット (`Cargo.toml` の `rev` と同じもの) から入れてください。
 >
 > ```sh
-> cargo install juiz_app --git https://github.com/OpenJUIZ/juiz --rev 9e07ce30bafb29d71e9896eb90bbafb9fdbafa25 --locked
-> pip install "pyjuiz @ git+https://github.com/OpenJUIZ/juiz@9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#subdirectory=bindings/pyjuiz"
+> cargo install juiz_app --git https://github.com/OpenJUIZ/juiz --rev 43a2210c7affaf62f93dc48ad1fd53d77f326df2 --locked
+> pip install "pyjuiz @ git+https://github.com/OpenJUIZ/juiz@43a2210c7affaf62f93dc48ad1fd53d77f326df2#subdirectory=bindings/pyjuiz"
 > ```
 
 Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。

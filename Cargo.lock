@@ -663,7 +663,7 @@ dependencies = [
 [[package]]
 name = "juiz_idl"
 version = "0.0.22"
-source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=43a2210c7affaf62f93dc48ad1fd53d77f326df2#43a2210c7affaf62f93dc48ad1fd53d77f326df2"
 dependencies = [
  "clap",
  "juiz_types",
@@ -675,7 +675,7 @@ dependencies = [
 [[package]]
 name = "juiz_macro"
 version = "0.0.22"
-source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=43a2210c7affaf62f93dc48ad1fd53d77f326df2#43a2210c7affaf62f93dc48ad1fd53d77f326df2"
 dependencies = [
  "anyhow",
  "litrs",
@@ -697,7 +697,7 @@ dependencies = [
 [[package]]
 name = "juiz_sdk"
 version = "0.0.22"
-source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=43a2210c7affaf62f93dc48ad1fd53d77f326df2#43a2210c7affaf62f93dc48ad1fd53d77f326df2"
 dependencies = [
  "anyhow",
  "base64",
@@ -720,7 +720,7 @@ dependencies = [
 [[package]]
 name = "juiz_types"
 version = "0.0.22"
-source = "git+https://github.com/OpenJUIZ/juiz?rev=9e07ce30bafb29d71e9896eb90bbafb9fdbafa25#9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=43a2210c7affaf62f93dc48ad1fd53d77f326df2#43a2210c7affaf62f93dc48ad1fd53d77f326df2"
 dependencies = [
  "base64",
  "regex",

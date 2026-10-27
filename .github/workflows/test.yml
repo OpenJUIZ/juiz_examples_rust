@@ -9,7 +9,7 @@ on:
 env:
   # データ型のサンプルは juiz の次の版 (0.0.23) で入る機能を使うので、公開までは juiz の main のコミットから入れる。
   # Cargo.toml の rev と合わせる。公開後は JUIZ_VERSION と cargo install juiz_app --version に戻す
-  JUIZ_GIT_REV: "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25"
+  JUIZ_GIT_REV: "43a2210c7affaf62f93dc48ad1fd53d77f326df2"
 
 jobs:
   examples:

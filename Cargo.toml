@@ -31,7 +31,7 @@ default-members = [
 [workspace.dependencies]
 # データ型 (types/geometry.jidl を使うサンプル) は juiz の次の版で入るので、公開までは juiz の main のコミットを使う。
 # 公開後は juiz_sdk = "0.0.23" のような版の指定に戻す
-juiz_sdk = { git = "https://github.com/OpenJUIZ/juiz", rev = "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25" }
-juiz_core = { git = "https://github.com/OpenJUIZ/juiz", rev = "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25" }
-juiz_idl = { git = "https://github.com/OpenJUIZ/juiz", rev = "9e07ce30bafb29d71e9896eb90bbafb9fdbafa25" }
+juiz_sdk = { git = "https://github.com/OpenJUIZ/juiz", rev = "43a2210c7affaf62f93dc48ad1fd53d77f326df2" }
+juiz_core = { git = "https://github.com/OpenJUIZ/juiz", rev = "43a2210c7affaf62f93dc48ad1fd53d77f326df2" }
+juiz_idl = { git = "https://github.com/OpenJUIZ/juiz", rev = "43a2210c7affaf62f93dc48ad1fd53d77f326df2" }
 anyhow = "1"
