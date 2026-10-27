@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.21) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.22) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -139,6 +139,135 @@ juiz process call "http://127.0.0.1:8001/process/robot2/increment0::increment_pr
 # => CapsulePtr((value:Value(11), option: []))
 ```
 
+### Composition: 複数の Process を 1 つにまとめる
+
+Composition を使うと、既にある Process / ContainerProcess を、関数を書き換えずに式の木として組み合わせ、1 つの Process の型 (Composite) にできます。設定ファイルの `composites:` に定義を書きます。子の Process のインスタンスは作らず、接続 (connections) も使いません。
+
+#### Container を含まない例: composite.conf
+
+```text
+inc_twice(arg1) = increment_process(increment_process(arg1))
+plus_one(x)     = decrement_process(inc_twice(x))
+```
+
+```yaml
+composites:
+  - type_name: inc_twice
+    body:
+      process: increment_process
+      args:
+        arg1: { process: increment_process }   # 書かなかった内側の arg1 は、元の名前のまま公開される
+  - type_name: plus_one
+    body:
+      process: decrement_process
+      args:
+        arg1:
+          process: inc_twice                     # 先に定義した Composite も子に使える
+          args:
+            arg1: { expose: x }                  # 公開する引数の名前を x に変える
+processes:
+  - { type_name: inc_twice, name: inc_twice0, trace: true }
+  - { type_name: plus_one, name: plus_one0 }
+```
+
+```sh
+RUST_LOG=info juiz -f composite.conf -d
+```
+
+```sh
+juiz process call "http://127.0.0.1:8000/process/inc_twice0::inc_twice" '{"arg1": 3}' -p
+# => CapsulePtr((value:Value(5), option: []))
+juiz process call "http://127.0.0.1:8000/process/plus_one0::plus_one" '{"x": 3}' -p
+# => CapsulePtr((value:Value(4), option: []))
+juiz process list --long
+# NAMESPACE  NAME        TYPE       ID
+# /          plus_one0   plus_one   http://127.0.0.1:8000/process/plus_one0::plus_one
+#     decrement_process
+#     └─ arg1: inc_twice
+#        └─ arg1 = $x
+# ...
+```
+
+`trace: true` を付けた `inc_twice0` は、呼ばれるたびに各段の戻り値をログに出します (`RUST_LOG=info` のとき)。
+
+```text
+INFO ... Composite(inc_twice) body.arg1 (increment_process) -> 4
+INFO ... Composite(inc_twice) body (increment_process) -> 5
+```
+
+#### 制御ループの例: control_loop.conf
+
+「センサを読む → 制御則 → モータに出す」を 1 つの CompositeContainerProcess にまとめ、実行コンテキスト (main_loop_ec、20Hz) に bind します。3 段が毎周期この順番で 1 回ずつ実行されるので、接続で組むときのように段の間の順番やタイミングを気にする必要がありません。
+
+部品は `component/example_control` にあります。本物のハードウェアの代わりに、ダミーのセンサ (`dummy_sensor`) とモータ (`dummy_motor`) を使います。2 つは同じライブラリの中の模擬的な世界 (ロボットの位置) を共有していて、モータを動かすとセンサで読める位置が変わります。
+
+```text
+follow_target(cc{sensor, motor}, target)
+  = dummy_motor_drive(cc.motor,
+        velocity = p_control(measured = dummy_sensor_read(cc.sensor), target, gain = 2.0))
+```
+
+ContainerProcess を含む Composite は、使う Container を「スロット」(`containers:` の `sensor`、`motor`) として宣言します。インスタンスを作るときは、`composite_containers:` で CompositeContainer を作り、スロットに既存の Container をつなぎます。
+
+```yaml
+composites:
+  - type_name: follow_target
+    containers: { sensor: dummy_sensor, motor: dummy_motor }   # スロット名 → Container の型
+    body:
+      process: dummy_motor_drive
+      container: motor
+      args:
+        velocity:
+          process: p_control
+          args:
+            measured: { process: dummy_sensor_read, container: sensor }
+            gain: { const: 2.0 }                 # 定数で固定し、公開しない
+containers:
+  - { type_name: dummy_sensor, name: sensor0 }
+  - { type_name: dummy_motor, name: motor0, dt: 0.05 }
+composite_containers:
+  - name: robot0
+    slots: { sensor: sensor0, motor: motor0 }    # スロット → 既存の Container
+    processes:
+      - { type_name: follow_target, name: follow0 }
+ecs:
+  - name: ec0
+    type_name: main_loop_ec
+    rate: 20.0
+    bind:
+      # ContainerProcess は Container の名前 (container_name) も書く
+      - { name: follow0, type_name: follow_target, container_name: robot0 }
+    auto_start: true
+```
+
+```sh
+juiz -f control_loop.conf -d
+# dummy_motor: velocity=2.000 position=0.100
+# dummy_motor: velocity=1.800 position=0.190
+# ...
+# dummy_motor: velocity=0.001 position=1.000
+```
+
+位置が目標 (`target` の既定値 1.0) に近づいていきます。中身は `--long` で確かめられます。
+
+```sh
+juiz container-process list --long
+# NAMESPACE  NAME     TYPE                  ID
+# /          follow0  follow_target:robot0  http://127.0.0.1:8000/container_process/follow0::follow_target:robot0
+#     dummy_motor_drive [motor: dummy_motor]
+#     └─ velocity: p_control
+#        ├─ gain = 2.0
+#        ├─ measured: dummy_sensor_read [sensor: dummy_sensor]
+#        └─ target = $target
+juiz container list --long
+# /          robot0   composite_container  http://127.0.0.1:8000/container/robot0::composite_container
+#     motor -> core://core/container/motor0::dummy_motor
+#     sensor -> core://core/container/sensor0::dummy_sensor
+# ...
+```
+
+EC に ContainerProcess を bind するときは、`container_name` (CompositeContainer の名前) も書きます。
+
 ### OpenCV: juiz_opencv (任意)
 
 カメラ画像の取得・表示・保存を行うサンプルです。OpenCV (と libclang) のインストールが必要なので、`cargo build` の対象からは外しています。
@@ -149,6 +278,15 @@ juiz -f opencv.conf -d
 ```
 
 `opencv_capture_oneshot.conf` はカメラから 1 枚撮って保存する例です。
+
+`opencv_capture_oneshot_composite.conf` は、その 3 段 (カメラから読む → 色変換 → ファイルに書く) を接続ではなく 1 つの CompositeContainerProcess `capture_save` にまとめた版です。カメラ (`video_capture`) とファイル (`filesystem`) の 2 つの Container をスロットで受け取り、呼び出すたびに 1 枚撮って保存します。
+
+```sh
+juiz -f opencv_capture_oneshot_composite.conf -d
+juiz container-process call "http://127.0.0.1:8000/container_process/capture_save0::capture_save:cam_fs0" '{"path": "capture.png"}' -p
+```
+
+どこかの段で失敗すると、式の木の中の位置 (`body.img.img` など) 付きのエラーが返ります。
 
 ## 構成
 
@@ -169,7 +307,7 @@ juiz -f opencv.conf -d
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.0.21"
+juiz_sdk = "0.0.22"
 ```
 
 ```rust
