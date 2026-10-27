@@ -1,0 +1,29 @@
+// juiz のサンプル 4 リポジトリ (Rust・Python・C++・Haskell) で共通に使う型。
+// 4 つのリポジトリの types/geometry.jidl は同じ中身にしておく (型の指紋が同じになり、言語をまたいでつながる)。
+namespace examples.geometry;
+
+/** 平面上の点 [m] */
+record Point2D {
+  double x = 0.0;
+  double y = 0.0;
+}
+
+/** 平面上の姿勢 */
+record Pose2D {
+  Point2D position = {"x": 0.0, "y": 0.0};
+  /** 向き [rad] */
+  double theta = 0.0;
+  /** 座標系の名前 */
+  string frame_id = "map";
+}
+
+/** 平面上の速度 */
+record Twist2D {
+  /** 前向きの速さ [m/s] */
+  double linear = 0.0;
+  /** 回る速さ [rad/s] */
+  double angular = 0.0;
+}
+
+/** 姿勢 pose から速度 twist で dt 秒動いた姿勢を返す */
+process Pose2D pose_move(Pose2D pose, Twist2D twist, double dt = 1.0);

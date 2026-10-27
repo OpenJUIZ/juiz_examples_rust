@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.22) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.23) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -268,6 +268,100 @@ juiz container list --long
 
 EC に ContainerProcess を bind するときは、`container_name` (CompositeContainer の名前) も書きます。
 
+### データ型: 言語をまたいで同じ型を使う
+
+Process の引数と戻り値に型を付けられます。型は IDL (JIDL) で書き、`juiz idl` (と Rust では build.rs の `juiz_idl`) で各言語の型を作ります。
+このリポジトリの [types/geometry.jidl](types/geometry.jidl) は、Rust・[Python](https://github.com/OpenJUIZ/juiz_examples_python)・[C++](https://github.com/OpenJUIZ/juiz_examples_cpp)・[Haskell](https://github.com/OpenJUIZ/juiz_examples_haskell) の 4 つのサンプルリポジトリで同じ中身にしてあり、どの言語で作っても型の指紋 (`@sha256:…`) が同じになります。指紋が同じ型どうしは、言語が違ってもそのままつながります。
+
+```text
+namespace examples.geometry;
+
+record Point2D { double x = 0.0; double y = 0.0; }
+record Pose2D  { Point2D position = {"x": 0.0, "y": 0.0}; double theta = 0.0; string frame_id = "map"; }
+record Twist2D { double linear = 0.0; double angular = 0.0; }
+```
+
+> データ型は juiz 0.0.23 から使えます。juiz コマンドと、Python の Process が使う pyjuiz は 0.0.23 以降を入れてください。
+>
+> ```sh
+> cargo install juiz_app --version 0.0.23 --locked
+> pip install pyjuiz==0.0.23
+> ```
+
+Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。
+
+```rust
+// build.rs
+fn main() {
+    juiz_idl::build::compile(&["../../types/geometry.jidl"]).unwrap();
+}
+```
+
+```rust
+include!(concat!(env!("OUT_DIR"), "/juiz_idl.rs"));
+use examples::geometry::{Point2D, Pose2D, Twist2D};
+
+#[juiz_process(arguments = { default = "{\"pose\": {}, \"twist\": {}, \"dt\": 1.0}" })]
+fn pose_move(pose: Pose2D, twist: Twist2D, dt: f64) -> JuizResult<Pose2D> { … }
+```
+
+#### Rust と Python をつなぐ: typed_pose.conf
+
+Python の Process ([python/](python/)) が出した `Twist2D` を Rust の `pose_move` が受け取り、`pose_move` が出した `Pose2D` を Python の Process が受け取ります。Python の Process には pyjuiz が要ります (`pip install pyjuiz`)。
+
+```text
+twist0 (Python, Twist2D) --Pull--> move0 (Rust, pose_move) --Push--> print0 (Python, Pose2D を表示)
+```
+
+先に Python の型を `gen/` に作ってから起動します (設定ファイルの `option.pythonpath` で `gen/` を読みます)。
+
+```sh
+juiz idl -g python -o gen types/geometry.jidl
+juiz -f typed_pose.conf -d
+```
+
+別のターミナルから `move0` を実行 (execute) すると、`twist0` から速度を取ってきて動き、結果を `print0` に送ります。
+
+```sh
+curl -X PATCH "http://127.0.0.1:8000/api/process/execute?identifier=core://core/process/move0::pose_move" -H "Content-Type: application/json" -d '{}'
+# => {"frame_id":"map","position":{"x":0.5,"y":0.0},"theta":0.0}
+```
+
+```text
+pose_move: (0.00, 0.00, 0.00) -> (0.50, 0.00, 0.00)
+pose_print_python receives Pose2D(x=0.50, y=0.00, theta=0.00, frame_id=map)
+```
+
+型付きの引数も、CLI や curl からは今までどおり辞書で渡せます。書かなかったフィールドは既定値になります。
+
+```sh
+juiz process call "http://127.0.0.1:8000/process/move0::pose_move" '{"pose": {"position": {"x": 1.0, "y": 2.0}}, "twist": {"linear": 1.0}, "dt": 2.0}' -p
+# => CapsulePtr((value:Value({"frame_id":"map","position":{"x":3.0,"y":2.0},"theta":0.0}), option: []))
+```
+
+読み込んだ型は `juiz type` で見られます。Rust と Python の型の指紋が同じなので、1 つの型として登録されています。
+
+```sh
+juiz type list
+# => ["examples.geometry.Point2D@sha256:5649ab39…","examples.geometry.Pose2D@sha256:123b8c15…","examples.geometry.Twist2D@sha256:115b9e0f…"]
+juiz type show examples.geometry.Twist2D
+# // examples.geometry.Twist2D@sha256:115b9e0f…
+# // used by: pose_move, twist_python
+# namespace examples.geometry;
+# ...
+```
+
+#### 型が合わないとつながらない: typed_mismatch.conf
+
+`twist0` の `Twist2D` を `move0` の引数 `pose` (`Pose2D`) につなごうとする設定ファイルです。juiz は接続を作らず、エラーで終わります。
+
+```sh
+juiz -f typed_mismatch.conf -d
+# Error:setup_objects() failed in setup in system.rs
+# ...
+#     2: Type examples.geometry.Twist2D@sha256:115b9e0f… cannot be read as examples.geometry.Pose2D@sha256:123b8c15… at 'Pose2D': record name examples.geometry.Twist2D does not match examples.geometry.Pose2D (add an alias to read it)
+```
+
 ### OpenCV: juiz_opencv (任意)
 
 カメラ画像の取得・表示・保存を行うサンプルです。OpenCV (と libclang) のインストールが必要なので、`cargo build` の対象からは外しています。
@@ -295,8 +389,10 @@ juiz container-process call "http://127.0.0.1:8000/container_process/capture_sav
 | `process/` | Process (入力と出力を持つ冪等な関数) のサンプル |
 | `container/` | Container (状態を持つ) と ContainerProcess のサンプル |
 | `component/` | 複数の要素を 1 つのライブラリにまとめた Component のサンプル |
+| `types/` | 4 つのサンプルリポジトリで共通に使う型 (JIDL) |
+| `python/` | データ型のサンプルで Rust の Process とつなぐ Python の Process |
 | `*.conf` | 各サンプルを動かすための juiz の設定ファイル |
-| `tests/test_examples.py` | 上のサンプルを起動して呼び出し、結果を確かめるテスト (`cargo build` のあと `python3 tests/test_examples.py`)。CI でも実行する |
+| `tests/test_examples.py` | 上のサンプルを起動して呼び出し、結果を確かめるテスト (`cargo build` のあと `python3 tests/test_examples.py`。データ型のサンプルのために pyjuiz が要る)。CI でも実行する |
 
 ## 自分で書くときは
 
@@ -307,7 +403,7 @@ juiz container-process call "http://127.0.0.1:8000/container_process/capture_sav
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.0.22"
+juiz_sdk = "0.0.23"
 ```
 
 ```rust

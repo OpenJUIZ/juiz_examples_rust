@@ -1,7 +1,7 @@
 """README のサンプルを実際に動かして結果を確かめるテスト。
 
 `cargo install juiz_app` で juiz を入れ、`cargo build` でサンプルをビルドしてから、
-リポジトリのルートで実行する:
+リポジトリのルートで実行する (データ型のサンプルの Python の Process には pyjuiz が要る):
 
     python3 tests/test_examples.py
 
@@ -17,10 +17,21 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
+import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8000
 BASE = f"http://127.0.0.1:{PORT}"
+
+# 呼び出しの代わりに (EXECUTE, ID) と書くと、HTTP の /api/process/execute を呼ぶ
+EXECUTE = "execute"
+
+# サンプル共通の型 (types/geometry.jidl) の識別子。4 つのサンプルリポジトリで同じになる
+# (言語をまたいでつながる) ことを確かめるため、指紋をここに書いておく。types/geometry.jidl を変えたら
+# 4 つのリポジトリの types/geometry.jidl とこの値をそろえる
+POSE2D_ID = "examples.geometry.Pose2D@sha256:123b8c15cda217478b331e2133a5de7c5aafb8075d0ca203e8a7e7e50797cf9b"
+TWIST2D_ID = "examples.geometry.Twist2D@sha256:115b9e0f7b27c487a3af04922d19364cc387e3116468e90f22034c4f51a9fe71"
 
 # (設定ファイル, [(juiz のサブコマンドと引数, 出力に含まれるべき文字列)], サーバーの出力に含まれるべき文字列)
 CASES = [
@@ -65,7 +76,69 @@ CASES = [
         (["container-process", "list", "--long"], "measured: dummy_sensor_read [sensor: dummy_sensor]"),
         (["container", "list", "--long"], "motor -> core://core/container/motor0::dummy_motor"),
     ], "position=1.000"),
+    # サンプル共通の型 (types/geometry.jidl)。Python の twist0 が出す Twist2D を Rust の move0 が受け、
+    # move0 が出す Pose2D を Python の print0 が受ける
+    ("typed_pose.conf", [
+        # execute は twist0 から速度 (linear=0.5) を取ってきて動き、結果を print0 に Push する
+        ((EXECUTE, "core://core/process/move0::pose_move"), '"position":{"x":0.5,"y":0.0}'),
+        (["process", "call", f"{BASE}/process/move0::pose_move",
+          '{"pose": {"position": {"x": 1.0, "y": 2.0}}, "twist": {"linear": 1.0}, "dt": 2.0}', "-p"],
+         '"position":{"x":3.0,"y":2.0}'),
+        # Rust と Python の型の指紋が同じなので、型は 1 つずつ登録される
+        (["type", "list"], POSE2D_ID),
+        (["type", "list"], TWIST2D_ID),
+        (["type", "show", "examples.geometry.Twist2D"], "used by: pose_move, twist_python"),
+    ], "pose_print_python receives Pose2D(x=0.50, y=0.00, theta=0.00, frame_id=map)"),
 ]
+
+# 型の合わない接続 (Twist2D を Pose2D の引数へ) を書いた設定ファイル。juiz は起動せずにエラーで終わる
+MISMATCH_CONF = "typed_mismatch.conf"
+MISMATCH_ERROR = f"{TWIST2D_ID} cannot be read as {POSE2D_ID}"
+
+
+def run_call(juiz: str, args) -> tuple[int, str, str]:
+    """1 つの呼び出しを行い、(終了コード, 標準出力, 標準エラー) を返す。"""
+    if isinstance(args, tuple) and args[0] == EXECUTE:
+        url = f"{BASE}/api/process/execute?" + urllib.parse.urlencode({"identifier": args[1]})
+        request = urllib.request.Request(url, data=b"{}", method="PATCH",
+                                         headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(request, timeout=30) as response:
+                return 0, response.read().decode("utf-8"), ""
+        except OSError as e:
+            return 1, "", str(e)
+    result = subprocess.run([juiz, *args], cwd=ROOT, capture_output=True, text=True, timeout=30)
+    return result.returncode, result.stdout, result.stderr
+
+
+def generate_python_types(juiz: str) -> bool:
+    """README の手順どおり、データ型のサンプルの Python の型を gen/ に作る。"""
+    print("--- juiz idl -g python -o gen types/geometry.jidl", flush=True)
+    result = subprocess.run([juiz, "idl", "-g", "python", "-o", "gen", "types/geometry.jidl"], cwd=ROOT,
+                            capture_output=True, text=True, timeout=60)
+    if result.returncode != 0:
+        print(f"NG: juiz idl が失敗しました\n{result.stdout}{result.stderr}", file=sys.stderr)
+        return False
+    return True
+
+
+def run_mismatch(juiz: str) -> bool:
+    """型の合わない接続を書いた設定ファイルでは、juiz がエラーで終わること。"""
+    print(f"--- {MISMATCH_CONF}", flush=True)
+    wait_for_port_free(PORT, 30)
+    try:
+        result = subprocess.run([juiz, "-f", MISMATCH_CONF, "-d"], cwd=ROOT, capture_output=True, text=True,
+                                timeout=60)
+    except subprocess.TimeoutExpired:
+        print("NG: 型の合わない接続なのに juiz が起動したままです", file=sys.stderr)
+        return False
+    output = result.stdout + result.stderr
+    if result.returncode == 0 or MISMATCH_ERROR not in output:
+        print(f"NG: 型が合わないエラーになりませんでした (終了コード {result.returncode})\n{output}",
+              file=sys.stderr)
+        return False
+    print(f"  {MISMATCH_ERROR}", flush=True)
+    return True
 
 
 def wait_for_port(port: int, timeout: float, server: subprocess.Popen) -> None:
@@ -87,6 +160,8 @@ def wait_for_port_free(port: int, timeout: float) -> None:
     while True:
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                # HTTP の API を直接呼ぶとサーバー側に TIME_WAIT が残る。juiz と同じく SO_REUSEADDR を付けて確かめる
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 s.bind(("127.0.0.1", port))
                 return
         except OSError:
@@ -113,15 +188,18 @@ def run_case(juiz: str, conf: str, calls: list, expected_output: str | list[str]
         kwargs["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
     with tempfile.NamedTemporaryFile("w+", suffix=".log", delete=False) as log:
         log_path = log.name
-        server = subprocess.Popen([juiz, "-f", conf, "-d"], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT, **kwargs)
+        # 出力をファイルに書くと Python の print がバッファされて終了まで出てこないので、バッファを切る
+        env = dict(os.environ, PYTHONUNBUFFERED="1")
+        server = subprocess.Popen([juiz, "-f", conf, "-d"], cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
+                                  env=env, **kwargs)
     ok = True
     try:
         wait_for_port(PORT, 60, server)
         for args, expected in calls:
-            result = subprocess.run([juiz, *args], cwd=ROOT, capture_output=True, text=True, timeout=30)
-            print(f"juiz {' '.join(args)}\n  {result.stdout.strip()}", flush=True)
-            if result.returncode != 0 or expected not in result.stdout:
-                print(f"NG: {expected!r} が出力に含まれていません\n{result.stderr}", file=sys.stderr)
+            returncode, stdout, stderr = run_call(juiz, args)
+            print(f"juiz {' '.join(args)}\n  {stdout.strip()}", flush=True)
+            if returncode != 0 or expected not in stdout:
+                print(f"NG: {expected!r} が出力に含まれていません\n{stderr}", file=sys.stderr)
                 ok = False
                 break
         if isinstance(expected_output, str):
@@ -227,9 +305,13 @@ def main() -> int:
     if juiz is None:
         print("juiz コマンドが見つかりません (cargo install juiz_app を実行してください)", file=sys.stderr)
         return 1
+    if not generate_python_types(juiz):
+        return 1
     failed = [conf for conf, calls, expected in CASES if not run_case(juiz, conf, calls, expected)]
     if not run_two_namespaces(juiz):
         failed.append("increment_process.conf --namespace")
+    if not run_mismatch(juiz):
+        failed.append(MISMATCH_CONF)
     if failed:
         print(f"失敗したサンプル: {', '.join(failed)}", file=sys.stderr)
         return 1

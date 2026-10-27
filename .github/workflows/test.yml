@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 
 env:
-  # README の手順で使う juiz_app の版。Cargo.toml の juiz_sdk と合わせる
-  JUIZ_VERSION: "0.0.22"
+  # README の手順で使う juiz_app と pyjuiz の版。Cargo.toml の juiz_sdk と合わせる
+  JUIZ_VERSION: "0.0.23"
 
 jobs:
   examples:
@@ -23,7 +23,7 @@ jobs:
       - name: Python の開発用ファイルを入れる (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-dev
-      # macOS の python3 は 3.14 で、juiz_app 0.0.22 が使う PyO3 0.22 は 3.13 までしか対応していない
+      # macOS の python3 は 3.14 で、juiz_app 0.0.23 が使う PyO3 0.22 は 3.13 までしか対応していない
       - name: Python 3.13 を入れる (macOS)
         if: runner.os == 'macOS'
         uses: actions/setup-python@v5
@@ -39,6 +39,9 @@ jobs:
       - name: juiz コマンドをインストールする
         if: steps.juiz-cache.outputs.cache-hit != 'true'
         run: cargo install juiz_app --version "$JUIZ_VERSION" --locked
+      # データ型のサンプル (typed_pose.conf) の Python の Process が pyjuiz を使う
+      - name: pyjuiz をインストールする
+        run: python3 -m pip install --user --break-system-packages "pyjuiz==${JUIZ_VERSION}"
       - uses: Swatinem/rust-cache@v2
       - name: サンプルをビルドする
         run: cargo build
