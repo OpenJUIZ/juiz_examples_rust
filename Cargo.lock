@@ -662,10 +662,11 @@ dependencies = [
 
 [[package]]
 name = "juiz_idl"
-version = "0.0.24"
+version = "0.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cca05eb9583e32bbffabaa0167f5128852fd9bd3b6668d1c31e7bd1837f803ed"
+checksum = "5551a829b01cb5ea4faccae6e7cd75abb735f8769bfe02ac1687c61a8792fbeb"
 dependencies = [
+ "base64",
  "clap",
  "juiz_types",
  "serde",
@@ -675,9 +676,9 @@ dependencies = [
 
 [[package]]
 name = "juiz_macro"
-version = "0.0.24"
+version = "0.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af595976b1207411b4562656747e6e5073673d1917ba0b198ab54376baf379b8"
+checksum = "b5da33bcb521dd7095559f5c37c9ea7a5798e0600929924c2395c8ef2a616b4b"
 dependencies = [
  "anyhow",
  "litrs",
@@ -698,9 +699,9 @@ dependencies = [
 
 [[package]]
 name = "juiz_sdk"
-version = "0.0.24"
+version = "0.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8422ed3570115ce6e54983f5989a2eec2164221e93918ba53642b0bc66515d9"
+checksum = "8f0067b9d4a0486dc5a19aa52b9d6fb9d2062c5663091d8328cdbb3e1548c90b"
 dependencies = [
  "anyhow",
  "base64",
@@ -722,9 +723,9 @@ dependencies = [
 
 [[package]]
 name = "juiz_types"
-version = "0.0.24"
+version = "0.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5c6cf14fc4cb8cd5645eabc12f6a093116fcd2438df2cc8bad2d9ea7b1d59d6a"
+checksum = "588dc8db07520f1fd95634d6c62d64d1249b10257a4566ff4212d21915e409d5"
 dependencies = [
  "base64",
  "regex",
