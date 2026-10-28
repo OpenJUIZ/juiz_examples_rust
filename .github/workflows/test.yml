@@ -23,13 +23,20 @@ jobs:
       - name: Python の開発用ファイルを入れる (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-dev
+      # juiz が組み込む Python と pyjuiz を入れる Python をそろえるため、macOS では setup-python の 3.14 を使う
+      # (Homebrew の python3 のままだと、juiz から pyjuiz が見えない)
+      - name: Python 3.14 を入れる (macOS)
+        if: runner.os == 'macOS'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
       - uses: dtolnay/rust-toolchain@stable
       - name: juiz コマンドのキャッシュ
         id: juiz-cache
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/juiz
-          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}
+          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}-py314
       - name: juiz コマンドをインストールする
         if: steps.juiz-cache.outputs.cache-hit != 'true'
         run: cargo install juiz_app --version "$JUIZ_VERSION" --locked
