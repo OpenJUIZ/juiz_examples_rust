@@ -8,7 +8,7 @@ on:
 
 env:
   # README の手順で使う juiz_app と pyjuiz の版。Cargo.toml の juiz_sdk と合わせる
-  JUIZ_VERSION: "0.0.24"
+  JUIZ_VERSION: "0.0.26"
 
 jobs:
   examples:
@@ -23,19 +23,20 @@ jobs:
       - name: Python の開発用ファイルを入れる (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y python3-dev
-      # macOS の python3 は 3.14 で、juiz_app 0.0.24 が使う PyO3 0.22 は 3.13 までしか対応していない
-      - name: Python 3.13 を入れる (macOS)
+      # juiz が組み込む Python と pyjuiz を入れる Python をそろえるため、macOS では setup-python の 3.14 を使う
+      # (Homebrew の python3 のままだと、juiz から pyjuiz が見えない)
+      - name: Python 3.14 を入れる (macOS)
         if: runner.os == 'macOS'
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
       - uses: dtolnay/rust-toolchain@stable
       - name: juiz コマンドのキャッシュ
         id: juiz-cache
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/juiz
-          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}-py313
+          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}-py314
       - name: juiz コマンドをインストールする
         if: steps.juiz-cache.outputs.cache-hit != 'true'
         run: cargo install juiz_app --version "$JUIZ_VERSION" --locked
