@@ -29,7 +29,7 @@ default-members = [
 ]
 
 [workspace.dependencies]
-juiz_sdk = "0.0.26"
-juiz_core = "0.0.26"
-juiz_idl = "0.0.26"
+juiz_sdk = "0.0.27"
+juiz_core = "0.0.27"
+juiz_idl = "0.0.27"
 anyhow = "1"
