@@ -1,0 +1,8 @@
+# talker_listener.conf を .juizapp にしたもの。plugins/<ターゲット>/ のプラグインは scripts/make_packages.py が
+# target/debug から写す。Rust のプラグインを含むので、pack が juiz: "=<juiz_sdk の版>" と rustc の版を書き足す
+format: 1
+name: talker_listener
+version: 0.1.0
+description: "talker と listener を Push でつなぐ例 (Rust)"
+license: MIT OR Apache-2.0
+entry: app.conf

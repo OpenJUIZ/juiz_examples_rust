@@ -9,6 +9,7 @@
 出力に期待する値が含まれるかを確かめたあと、Ctrl+C(SIGINT)で止める。
 """
 
+import glob
 import os
 import shutil
 import signal
@@ -26,6 +27,9 @@ BASE = f"http://127.0.0.1:{PORT}"
 
 # 呼び出しの代わりに (EXECUTE, ID) と書くと、HTTP の /api/process/execute を呼ぶ
 EXECUTE = "execute"
+
+# packages/talker_listener の .juizapp を juiz run したときの出力
+PACKAGE_OUTPUT = 'listener: Hello World'
 
 # サンプル共通の型 (types/geometry.jidl) の識別子。4 つのサンプルリポジトリで同じになる
 # (言語をまたいでつながる) ことを確かめるため、指紋をここに書いておく。types/geometry.jidl を変えたら
@@ -300,6 +304,50 @@ def run_two_namespaces(juiz: str) -> bool:
     return ok
 
 
+def run_package(juiz: str) -> bool:
+    """README の「.juizapp で配る」の手順。
+
+    scripts/make_packages.py で dist/ に talker_listener の .juizapp を作り、juiz run で起動して
+    talker_listener.conf と同じ出力になること。展開先は一時ディレクトリにする。
+    """
+    print("--- scripts/make_packages.py / juiz run", flush=True)
+    result = subprocess.run([sys.executable, "scripts/make_packages.py"], cwd=ROOT, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace", timeout=120)
+    print(result.stdout.strip(), flush=True)
+    packages = glob.glob(os.path.join(ROOT, "dist", "talker_listener-0.1.0-*.juizapp"))
+    if result.returncode != 0 or len(packages) != 1:
+        print(f"NG: .juizapp を作れませんでした\n{result.stderr}", file=sys.stderr)
+        return False
+    wait_for_port_free(PORT, 30)
+    cache_dir = tempfile.mkdtemp(prefix="juiz_cache_")
+    saved = os.environ.get("JUIZ_CACHE_DIR")
+    os.environ["JUIZ_CACHE_DIR"] = cache_dir
+    log = tempfile.NamedTemporaryFile("w+", suffix=".log", delete=False)
+    args = ["run", os.path.relpath(packages[0], ROOT)]
+    server = start_server(juiz, args, log)
+    log.close()
+    ok = True
+    try:
+        if wait_for_output(log.name, PACKAGE_OUTPUT, 60):
+            print(f"juiz {' '.join(args)}\n  {PACKAGE_OUTPUT}", flush=True)
+        else:
+            print(f"NG: juiz の出力に {PACKAGE_OUTPUT!r} が含まれていません", file=sys.stderr)
+            ok = False
+    finally:
+        if server.poll() is None and not stop_server(server):
+            ok = False
+        if not ok:
+            with open(log.name, encoding="utf-8", errors="replace") as f:
+                print(f"juiz の出力:\n{f.read()}", file=sys.stderr)
+        os.unlink(log.name)
+        if saved is None:
+            os.environ.pop("JUIZ_CACHE_DIR", None)
+        else:
+            os.environ["JUIZ_CACHE_DIR"] = saved
+        shutil.rmtree(cache_dir, ignore_errors=True)
+    return ok
+
+
 def main() -> int:
     juiz = shutil.which("juiz")
     if juiz is None:
@@ -312,6 +360,8 @@ def main() -> int:
         failed.append("increment_process.conf --namespace")
     if not run_mismatch(juiz):
         failed.append(MISMATCH_CONF)
+    if not run_package(juiz):
+        failed.append("packages/talker_listener")
     if failed:
         print(f"失敗したサンプル: {', '.join(failed)}", file=sys.stderr)
         return 1

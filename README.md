@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.27) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.28) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -284,8 +284,8 @@ record Twist2D { double linear = 0.0; double angular = 0.0; }
 > データ型は juiz 0.0.23 から使えます。juiz コマンドと、Python の Process が使う pyjuiz は 0.0.23 以降を入れてください。
 >
 > ```sh
-> cargo install juiz_app --version 0.0.27 --locked
-> pip install pyjuiz==0.0.27
+> cargo install juiz_app --version 0.0.28 --locked
+> pip install pyjuiz==0.0.28
 > ```
 
 Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。
@@ -382,6 +382,25 @@ juiz container-process call "http://127.0.0.1:8000/container_process/capture_sav
 
 どこかの段で失敗すると、式の木の中の位置 (`body.img.img` など) 付きのエラーが返ります。
 
+### アプリを .juizapp で配る
+
+`packages/talker_listener/` を、1 つのファイル (`.juizapp`、zip) にまとめて配れます (juiz 0.0.28 から)。受け取った人は、ビルドしなくても `juiz run` だけで動かせます。
+
+```sh
+cargo build
+python3 scripts/make_packages.py
+# Packed talker_listener 0.1.0 (x86_64-unknown-linux-gnu; 5 files) into .../dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
+juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
+# talker: Hello World
+# listener: Hello World
+```
+
+`packages/talker_listener/` に置くのはマニフェスト `juizapp.yaml` と設定ファイル `app.conf` だけです。`app.conf` はプラグインを `path: "plugins/{target}"` で参照し、`scripts/make_packages.py` が `target/debug` のプラグインを `plugins/<この機械のターゲット>/` に写してから `juiz pack --target <ターゲット>` を呼びます。
+タグ (`v*`) を付けると、CI が Linux (x86_64) と macOS (arm64) で作った `.juizapp` を [Releases](https://github.com/OpenJUIZ/juiz_examples_rust/releases) に載せます。
+
+> Rust のプラグインは、同じ版の juiz_sdk と**同じ rustc** でビルドした juiz でしか読み込めません。`juiz run` は起動する前に確かめ、違えばどの rustc が要るかを表示して止まります。
+> Releases の `.juizapp` は、CI が作った時点の stable の rustc でビルドしたものです。たくさんの人に配るアプリは、Python・C++・Haskell で書く方が楽です。
+
 ## 構成
 
 | ディレクトリ | 内容 |
@@ -392,6 +411,8 @@ juiz container-process call "http://127.0.0.1:8000/container_process/capture_sav
 | `types/` | 4 つのサンプルリポジトリで共通に使う型 (JIDL) |
 | `python/` | データ型のサンプルで Rust の Process とつなぐ Python の Process |
 | `*.conf` | 各サンプルを動かすための juiz の設定ファイル |
+| `packages/` | `.juizapp` にするアプリのマニフェストと設定ファイル |
+| `scripts/make_packages.py` | ビルドしたプラグインを `packages/` のアプリに写し、`dist/` に `.juizapp` を作るスクリプト |
 | `tests/test_examples.py` | 上のサンプルを起動して呼び出し、結果を確かめるテスト (`cargo build` のあと `python3 tests/test_examples.py`。データ型のサンプルのために pyjuiz が要る)。CI でも実行する |
 
 ## 自分で書くときは
@@ -403,7 +424,7 @@ juiz container-process call "http://127.0.0.1:8000/container_process/capture_sav
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.0.27"
+juiz_sdk = "0.0.28"
 ```
 
 ```rust
