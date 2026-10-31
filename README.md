@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.28) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.0.30) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -284,8 +284,8 @@ record Twist2D { double linear = 0.0; double angular = 0.0; }
 > データ型は juiz 0.0.23 から使えます。juiz コマンドと、Python の Process が使う pyjuiz は 0.0.23 以降を入れてください。
 >
 > ```sh
-> cargo install juiz_app --version 0.0.28 --locked
-> pip install pyjuiz==0.0.28
+> cargo install juiz_app --version 0.0.30 --locked
+> pip install pyjuiz==0.0.30
 > ```
 
 Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。
@@ -398,8 +398,9 @@ juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
 `packages/talker_listener/` に置くのはマニフェスト `juizapp.yaml` と設定ファイル `app.conf` だけです。`app.conf` はプラグインを `path: "plugins/{target}"` で参照し、`scripts/make_packages.py` が `target/debug` のプラグインを `plugins/<この機械のターゲット>/` に写してから `juiz pack --target <ターゲット>` を呼びます。
 タグ (`v*`) を付けると、CI が Linux (x86_64) と macOS (arm64) で作った `.juizapp` を [Releases](https://github.com/OpenJUIZ/juiz_examples_rust/releases) に載せます。
 
-> Rust のプラグインは、同じ版の juiz_sdk と**同じ rustc** でビルドした juiz でしか読み込めません。`juiz run` は起動する前に確かめ、違えばどの rustc が要るかを表示して止まります。
-> Releases の `.juizapp` は、CI が作った時点の stable の rustc でビルドしたものです。たくさんの人に配るアプリは、Python・C++・Haskell で書く方が楽です。
+> juiz 0.0.30 から、Rust の Process・Container・Component のプラグインは C の関数の境界 (プラグインの C ABI) で読み込まれるので、受け取る側の juiz と rustc の版が違っても動きます。pip で入れた juiz (`pip install juiz-cli`) でも動きます。
+> `juiz pack` はマニフェストに `rust.abi` (ABI の版) を書き、`juiz run` は起動する前にそれを確かめます。CI では、stable と違う版の rustc でビルドした `.juizapp` を pip の juiz で動かして確かめています。
+> 実行コンテキスト (EC)・ブローカーを Rust で書いてパッケージに入れたときと、0.0.29 以前の juiz_sdk でビルドしたときは、今までどおり同じ版の juiz_sdk と同じ rustc でビルドした juiz でしか読み込めません。
 
 ## 構成
 
@@ -424,7 +425,7 @@ juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.0.28"
+juiz_sdk = "0.0.30"
 ```
 
 ```rust

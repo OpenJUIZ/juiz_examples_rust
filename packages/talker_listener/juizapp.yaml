@@ -1,5 +1,5 @@
 # talker_listener.conf を .juizapp にしたもの。plugins/<ターゲット>/ のプラグインは scripts/make_packages.py が
-# target/debug から写す。Rust のプラグインを含むので、pack が juiz: "=<juiz_sdk の版>" と rustc の版を書き足す
+# target/debug から写す。Rust のプラグイン (C ABI) を含むので、pack が rust.abi (ABI の版) と juiz: ">=<pack した juiz の版>" を書き足す
 format: 1
 name: talker_listener
 version: 0.1.0

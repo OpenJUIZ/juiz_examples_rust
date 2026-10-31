@@ -9,7 +9,7 @@ on:
 
 env:
   # README の手順で使う juiz_app と pyjuiz の版。Cargo.toml の juiz_sdk と合わせる
-  JUIZ_VERSION: "0.0.28"
+  JUIZ_VERSION: "0.0.30"
 
 jobs:
   examples:
@@ -55,6 +55,41 @@ jobs:
           name: juizapp-${{ matrix.os }}
           path: dist/*.juizapp
           if-no-files-found: error
+
+  # stable と違う版の rustc でビルドした .juizapp が、pip で入れた juiz (juiz の CI がビルドしたもの) で動くこと。
+  # Rust のプラグインはプラグインの C ABI で読み込まれるので、rustc がそろっていなくてよい (OpenJUIZ/juiz#291)
+  cross-rustc:
+    runs-on: ubuntu-latest
+    env:
+      OTHER_RUSTC: "1.88.0"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.OTHER_RUSTC }}
+      - name: pip で juiz を入れる
+        run: |
+          python -m venv .venv
+          .venv/bin/pip install "juiz-cli==${JUIZ_VERSION}"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: rustc ${{ env.OTHER_RUSTC }} で talker と listener をビルドする
+        run: |
+          rustc -V
+          cargo build -p talker -p listener
+      - name: .juizapp を作って pip の juiz で動かす
+        run: python3 tests/test_examples.py --package-only
+      - name: マニフェストに rustc を書いていないこと (C ABI のプラグインだけ)
+        run: |
+          python3 - <<'PY'
+          import glob, zipfile
+          path, = glob.glob("dist/talker_listener-0.1.0-*.juizapp")
+          manifest = zipfile.ZipFile(path).read("juizapp.yaml").decode()
+          print(manifest)
+          assert "abi: 1" in manifest and "rustc" not in manifest, "rust.abi が無いか、rust.rustc が書かれています"
+          PY
 
   # v* のタグを付けたときは、各 OS で作った .juizapp を Releases に載せる
   release:
