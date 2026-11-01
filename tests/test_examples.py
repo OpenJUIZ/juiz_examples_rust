@@ -353,6 +353,10 @@ def main() -> int:
     if juiz is None:
         print("juiz コマンドが見つかりません (cargo install juiz_app を実行してください)", file=sys.stderr)
         return 1
+    # --package-only: .juizapp の手順だけ確かめる (CI の cross-rustc ジョブが、stable と違う rustc で
+    # ビルドしたプラグインを pip で入れた juiz で動かすのに使う)
+    if "--package-only" in sys.argv[1:]:
+        return 0 if run_package(juiz) else 1
     if not generate_python_types(juiz):
         return 1
     failed = [conf for conf, calls, expected in CASES if not run_case(juiz, conf, calls, expected)]

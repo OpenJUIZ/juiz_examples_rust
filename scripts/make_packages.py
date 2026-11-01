@@ -7,8 +7,8 @@ packages/<名前>/ には juizapp.yaml と conf だけを置き、プラグイ�
 plugins/<この機械のターゲット>/ に写して使う。写した結果を build/packages/<名前>/ に作り、
 `juiz pack --target <ターゲット>` で <出力先>/<名前>-<版>-<ターゲット>.juizapp を作る。
 
-Rust のプラグインは、同じ juiz_sdk の版と同じ rustc でビルドした juiz でしか読み込めない
-(juiz run が起動前に確かめる)。
+Rust のプラグインはプラグインの C ABI で読み込まれるので (juiz 0.0.30 から)、受け取る側の juiz と
+rustc の版が違っても動く。juiz run は起動前にマニフェストの rust.abi (ABI の版) を確かめる。
 """
 
 import argparse
