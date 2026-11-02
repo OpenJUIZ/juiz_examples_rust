@@ -9,7 +9,7 @@ on:
 
 env:
   # README の手順で使う juiz_app と pyjuiz の版。Cargo.toml の juiz_sdk と合わせる
-  JUIZ_VERSION: "0.0.30"
+  JUIZ_VERSION: "0.1.0"
 
 jobs:
   examples:
