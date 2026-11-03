@@ -11,6 +11,7 @@ members = [
     "container/example_container_increment",
     "component/example_component",
     "component/example_control",
+    "component/mobile_robot",
     "component/juiz_opencv",
 ]
 # juiz_opencv は OpenCV のインストールが必要なので、既定のビルド対象から外している。
@@ -26,10 +27,13 @@ default-members = [
     "container/example_container_increment",
     "component/example_component",
     "component/example_control",
+    "component/mobile_robot",
 ]
 
 [workspace.dependencies]
-juiz_sdk = "0.1.0"
-juiz_core = "0.1.0"
-juiz_idl = "0.1.0"
+# Transformations (component/mobile_robot) は juiz の次の版で入るので、公開までは juiz の main のコミットを使う。
+# 公開後は juiz_sdk = "0.2.0" のような版の指定に戻す
+juiz_sdk = { git = "https://github.com/OpenJUIZ/juiz", rev = "b90770b1b6451a37bd712b22b33c78da882496d7" }
+juiz_core = { git = "https://github.com/OpenJUIZ/juiz", rev = "b90770b1b6451a37bd712b22b33c78da882496d7" }
+juiz_idl = { git = "https://github.com/OpenJUIZ/juiz", rev = "b90770b1b6451a37bd712b22b33c78da882496d7" }
 anyhow = "1"
