@@ -11,6 +11,7 @@ members = [
     "container/example_container_increment",
     "component/example_component",
     "component/example_control",
+    "component/mobile_robot",
     "component/juiz_opencv",
 ]
 # juiz_opencv は OpenCV のインストールが必要なので、既定のビルド対象から外している。
@@ -26,10 +27,11 @@ default-members = [
     "container/example_container_increment",
     "component/example_component",
     "component/example_control",
+    "component/mobile_robot",
 ]
 
 [workspace.dependencies]
-juiz_sdk = "0.1.0"
-juiz_core = "0.1.0"
-juiz_idl = "0.1.0"
+juiz_sdk = "0.2.0"
+juiz_core = "0.2.0"
+juiz_idl = "0.2.0"
 anyhow = "1"

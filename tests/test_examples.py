@@ -10,6 +10,8 @@
 """
 
 import glob
+import json
+import math
 import os
 import shutil
 import signal
@@ -37,6 +39,49 @@ PACKAGE_OUTPUT = 'listener: Hello World'
 POSE2D_ID = "examples.geometry.Pose2D@sha256:123b8c15cda217478b331e2133a5de7c5aafb8075d0ca203e8a7e7e50797cf9b"
 TWIST2D_ID = "examples.geometry.Twist2D@sha256:115b9e0f7b27c487a3af04922d19364cc387e3116468e90f22034c4f51a9fe71"
 
+# Transformations のサンプル (transformations.conf) の呼び出しの URL
+MOVE0 = f"{BASE}/container_process/move0::mobile_base_move:base0"
+PAN0 = f"{BASE}/container_process/pan0::pantilt_set_pan:pantilt0"
+CAMERA_POSE0 = f"{BASE}/container_process/camera_pose0::camera_pose:camera0"
+
+
+class PoseNear:
+    """出力の PoseStamped (JSON) の位置が (x, y, z) に近く、基準が frame_id であること。
+
+    小数の表し方は言語によって違う (2.1 と 2.1000000000000001 など) ので、文字列ではなく数で比べる。
+    基準が Periodic の Anchor (map) のときは最大 1 周期古い値が返るので、合うまで何度か読み直す。
+    """
+
+    def __init__(self, frame_id: str, x: float, y: float, z: float):
+        self.frame_id = frame_id
+        self.position = (x, y, z)
+
+    def matches(self, stdout: str) -> bool:
+        try:
+            value = json.loads(stdout)
+        except ValueError:
+            return False
+        p = value.get("pose", {}).get("position", {})
+        return (value.get("header", {}).get("frame_id") == self.frame_id
+                and all(math.isclose(p.get(k, math.nan), v, abs_tol=1e-6) for k, v in zip("xyz", self.position)))
+
+    def __repr__(self):
+        return f"PoseNear(frame_id={self.frame_id!r}, position={self.position})"
+
+
+TRANSFORMATIONS_CASE = ("transformations.conf", [
+    # 台車を odom から見て x=1.0 に動かす。base0 に付けた Pose 通知で print0 が呼ばれる
+    (["container-process", "call", MOVE0, '{"vx": 1.0, "dt": 1.0}', "-p"], '"frame_id":"odom"'),
+    # 雲台を 90 度 (pi/2) 回す
+    (["container-process", "call", PAN0, '{"pan": 1.5707963267948966}', "-p"], '"frame_id":"base0"'),
+    # カメラは雲台の前 (x=0.05) に付いているので、回した後は台車の左 (y=0.05) にある
+    (["container", "pose", "camera0", "--reference", "odom"], PoseNear("odom", 1.1, 0.05, 0.32)),
+    # map から見ると map → odom の (1, 2, 0) が足される。map は Periodic なので少し遅れて追いつく
+    (["container", "pose", "camera0", "--reference", "map"], PoseNear("map", 2.1, 2.05, 0.32)),
+    (["container-process", "call", CAMERA_POSE0, '{"reference": "map"}', "-p"], '"frame_id":"map"'),
+    (["anchor", "tree", "map"], "└─ camera0"),
+    (["container", "list", "--long"], "anchor: periodic (10 Hz)"),
+], "pose_print: x=1.00 y=0.00 yaw=0.0deg (from odom)")
 # (設定ファイル, [(juiz のサブコマンドと引数, 出力に含まれるべき文字列)], サーバーの出力に含まれるべき文字列)
 CASES = [
     ("increment_process.conf", [
@@ -93,6 +138,8 @@ CASES = [
         (["type", "list"], TWIST2D_ID),
         (["type", "show", "examples.geometry.Twist2D"], "used by: pose_move, twist_python"),
     ], "pose_print_python receives Pose2D(x=0.50, y=0.00, theta=0.00, frame_id=map)"),
+    # 部品の位置関係: map → odom → base0 → pantilt0 → camera0
+    TRANSFORMATIONS_CASE,
 ]
 
 # 型の合わない接続 (Twist2D を Pose2D の引数へ) を書いた設定ファイル。juiz は起動せずにエラーで終わる
@@ -201,8 +248,15 @@ def run_case(juiz: str, conf: str, calls: list, expected_output: str | list[str]
         wait_for_port(PORT, 60, server)
         for args, expected in calls:
             returncode, stdout, stderr = run_call(juiz, args)
+            # PoseNear は Periodic の Anchor の遅れを待つため、合うまで読み直す
+            for _ in range(10):
+                if not isinstance(expected, PoseNear) or (returncode == 0 and expected.matches(stdout)):
+                    break
+                time.sleep(0.5)
+                returncode, stdout, stderr = run_call(juiz, args)
             print(f"juiz {' '.join(args)}\n  {stdout.strip()}", flush=True)
-            if returncode != 0 or expected not in stdout:
+            matched = expected.matches(stdout) if isinstance(expected, PoseNear) else expected in stdout
+            if returncode != 0 or not matched:
                 print(f"NG: {expected!r} が出力に含まれていません\n{stderr}", file=sys.stderr)
                 ok = False
                 break
