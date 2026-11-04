@@ -10,6 +10,7 @@
 //! - `mobile_base_move` はオドメトリを積分して、odom から見た自分の位置姿勢を `set_pose` で書く。
 //! - `pantilt_set_pan` はパン角を書く (台車から見た自分の向きだけを変える)。
 //! - `camera_pose` は基準から見た自分の位置姿勢を `pose` で読む。カメラは Transform で雲台につながっているだけ。
+//!   読むだけなので readonly (`&ContainerImpl`) にしている。
 //! - `pose_print` は Pose 通知 (conf の pose_listeners:) で呼ばれる Process。
 
 use juiz_sdk::geometry::{Pose, PoseStamped, Quaternion, Vector3};
@@ -74,11 +75,15 @@ fn camera() -> JuizResult<Box<Camera>> {
     Ok(Box::new(Camera {}))
 }
 
-/// 基準 reference から見た自分の位置姿勢 (juiz_std.geometry.PoseStamped)
+/// 基準 reference から見た自分の位置姿勢 (juiz_std.geometry.PoseStamped)。
+///
+/// 読むだけなので readonly にする (OpenJUIZ/juiz#377)。Container を `&ContainerImpl` で受け取ると
+/// マクロが readonly の ContainerProcess にし、juiz は Container を読み出しロックで呼ぶ。
+/// 同じ Container の readonly 同士は並行に走る。中では `set_pose` を呼べない
 #[juiz_component_container_process(container_type = "camera" arguments = {
     default = { reference = "map" }
 })]
-fn camera_pose(c: &mut ContainerImpl<Camera>, reference: String) -> JuizResult<Capsule> {
+fn camera_pose(c: &ContainerImpl<Camera>, reference: String) -> JuizResult<Capsule> {
     Ok(c.pose(&reference)?.into())
 }
 
