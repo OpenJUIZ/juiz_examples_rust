@@ -82,6 +82,34 @@ TRANSFORMATIONS_CASE = ("transformations.conf", [
     (["anchor", "tree", "map"], "└─ camera0"),
     (["container", "list", "--long"], "anchor: periodic (10 Hz)"),
 ], "pose_print: x=1.00 y=0.00 yaw=0.0deg (from odom)")
+
+# System をまたぐ Transform のサンプル (transformations_map.conf と transformations_robot.conf、OpenJUIZ/juiz#417)。
+# 地図の System はポート {PORT}、ロボットの System はポート {ROBOT_PORT} で待ち受ける
+ROBOT_PORT = PORT + 1
+ROBOT = f"http://127.0.0.1:{ROBOT_PORT}"
+# ロボットの System での map の写しの ID (地図の System の map の ID をブローカー付きにしたもの)
+MAP_REPLICA = f"{BASE}/container/map::periodic_anchor"
+CROSS_SYSTEM_ROBOT_CALLS = [
+    (["container-process", "call", f"{ROBOT}/container_process/move0::mobile_base_move:base0",
+      '{"vx": 1.0, "dt": 1.0}', "-p"], '"frame_id":"odom"'),
+    (["container-process", "call", f"{ROBOT}/container_process/pan0::pantilt_set_pan:pantilt0",
+      '{"pan": 1.5707963267948966}', "-p"], '"frame_id":"base0"'),
+    (["-s", ROBOT, "container", "pose", "camera0", "--reference", "odom"], PoseNear("odom", 1.1, 0.05, 0.32)),
+    # ロボットの System に map は無いので、名前 map は写しに解決する。基準の ID は写しの ID
+    (["-s", ROBOT, "container", "pose", "camera0", "--reference", "map"], PoseNear(MAP_REPLICA, 2.1, 2.05, 0.32)),
+    (["container-process", "call", f"{ROBOT}/container_process/camera_pose0::camera_pose:camera0",
+      '{"reference": "map"}', "-p"], f'"frame_id":"{MAP_REPLICA}"'),
+    (["-s", ROBOT, "transform", "list", "--long"], "(remote: ok)"),
+    (["-s", ROBOT, "anchor", "tree", "map"], "└─ camera0"),
+]
+CROSS_SYSTEM_MAP_CALLS = [
+    # 地図の System から、ロボットの System の camera0 を map から見て読む (ロボットの System に回る)
+    (["container", "pose", f"{ROBOT}/container/camera0::camera", "--reference", "map"],
+     PoseNear("map", 2.1, 2.05, 0.32)),
+    # 地図の System の map には、ロボットの System が取りに来ている印が付く
+    (["container", "list", "--long"], "remote child: "),
+]
+CROSS_SYSTEM_OUTPUT = "pose_print: x=1.00 y=0.00 yaw=0.0deg (from odom)"
 # (設定ファイル, [(juiz のサブコマンドと引数, 出力に含まれるべき文字列)], サーバーの出力に含まれるべき文字列)
 CASES = [
     ("increment_process.conf", [
@@ -402,6 +430,81 @@ def run_package(juiz: str) -> bool:
     return ok
 
 
+def check_calls(juiz: str, calls: list) -> bool:
+    """呼び出しを順に行い、出力に期待する値が含まれるかを確かめる。PoseNear は合うまで読み直す。"""
+    for args, expected in calls:
+        returncode, stdout, stderr = run_call(juiz, args)
+        for _ in range(10):
+            if returncode == 0 and (expected.matches(stdout) if isinstance(expected, PoseNear)
+                                    else expected in stdout):
+                break
+            time.sleep(0.5)
+            returncode, stdout, stderr = run_call(juiz, args)
+        print(f"juiz {' '.join(args)}\n  {stdout.strip()}", flush=True)
+        matched = expected.matches(stdout) if isinstance(expected, PoseNear) else expected in stdout
+        if returncode != 0 or not matched:
+            print(f"NG: {expected!r} が出力に含まれていません\n{stderr}", file=sys.stderr)
+            return False
+    return True
+
+
+def run_cross_system(juiz: str) -> bool:
+    """README の「System をまたぐ Transform」の手順。
+
+    地図の System (transformations_map.conf) を起動してから、ロボットの System (transformations_robot.conf)
+    を起動する。ロボットの System は地図の System の map の位置を写しとして取り込むので、map から見た
+    camera0 がどちらの System からも読める。地図の System を止めると、写しは timeout の後に消える。
+    """
+    print("--- transformations_map.conf + transformations_robot.conf", flush=True)
+    wait_for_port_free(PORT, 30)
+    wait_for_port_free(ROBOT_PORT, 30)
+    servers = {}
+    logs = {}
+    ok = True
+    try:
+        for name, conf, port in [("map", "transformations_map.conf", PORT),
+                                 ("robot", "transformations_robot.conf", ROBOT_PORT)]:
+            log = tempfile.NamedTemporaryFile("w+", suffix=".log", delete=False)
+            logs[name] = log.name
+            servers[name] = start_server(juiz, ["-f", conf, "-d"], log)
+            log.close()
+            wait_for_port(port, 60, servers[name])
+        ok = check_calls(juiz, CROSS_SYSTEM_ROBOT_CALLS) and check_calls(juiz, CROSS_SYSTEM_MAP_CALLS)
+        if ok and not wait_for_output(logs["robot"], CROSS_SYSTEM_OUTPUT, 15):
+            print(f"NG: ロボットの System の出力に {CROSS_SYSTEM_OUTPUT!r} が含まれていません", file=sys.stderr)
+            ok = False
+        # 地図の System を止めると、ロボットの System の写しは timeout (3 秒) の後に消える (Transform は残る)
+        if ok:
+            ok = stop_server(servers["map"])
+        if ok:
+            args = ["-s", ROBOT, "transform", "list", "--long"]
+            deadline = time.monotonic() + 15
+            while True:
+                returncode, stdout, stderr = run_call(juiz, args)
+                if returncode == 0 and "(remote: lost)" in stdout:
+                    print(f"juiz {' '.join(args)}\n  {stdout.strip()}", flush=True)
+                    break
+                if time.monotonic() > deadline:
+                    print(f"NG: 地図の System を止めても写しが消えません\n{stdout}{stderr}", file=sys.stderr)
+                    ok = False
+                    break
+                time.sleep(0.5)
+    except Exception as e:
+        print(f"NG: {e}", file=sys.stderr)
+        ok = False
+    finally:
+        for name in ["robot", "map"]:
+            server = servers.get(name)
+            if server is not None and server.poll() is None and not stop_server(server):
+                ok = False
+        for path in logs.values():
+            if not ok:
+                with open(path, encoding="utf-8", errors="replace") as f:
+                    print(f"juiz の出力:\n{f.read()}", file=sys.stderr)
+            os.unlink(path)
+    return ok
+
+
 def main() -> int:
     juiz = shutil.which("juiz")
     if juiz is None:
@@ -416,6 +519,8 @@ def main() -> int:
     failed = [conf for conf, calls, expected in CASES if not run_case(juiz, conf, calls, expected)]
     if not run_two_namespaces(juiz):
         failed.append("increment_process.conf --namespace")
+    if not run_cross_system(juiz):
+        failed.append("transformations_map.conf + transformations_robot.conf")
     if not run_mismatch(juiz):
         failed.append(MISMATCH_CONF)
     if not run_package(juiz):

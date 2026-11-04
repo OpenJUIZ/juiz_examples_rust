@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.2.0) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.2.1) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -284,8 +284,8 @@ record Twist2D { double linear = 0.0; double angular = 0.0; }
 > データ型は juiz 0.0.23 から使えます。juiz コマンドと、Python の Process が使う pyjuiz は 0.0.23 以降を入れてください。
 >
 > ```sh
-> cargo install juiz_app --version 0.2.0 --locked
-> pip install pyjuiz==0.2.0
+> cargo install juiz_app --version 0.2.1 --locked
+> pip install pyjuiz==0.2.1
 > ```
 
 Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。
@@ -434,6 +434,74 @@ juiz anchor tree map
 `map` は Periodic なので、書き込みの直後に読むと最大 1 周期 (0.1 秒) 古い値が返ります。`odom` は Static なので、`set_pose` が戻った時点で新しい値になっています。
 管理画面 (`http://127.0.0.1:8000/ui`) の「変換木」でも木と位置姿勢を見られます。
 
+#### System をまたぐ: transformations_map.conf と transformations_robot.conf
+
+上の木を、地図の System とロボットの System の 2 つに分けた版です。地図 (`map`) を持つ System と、台車・雲台・カメラを持つ System を別のプロセスで動かし、ロボットの System から `map` を基準に読めます。
+
+> juiz 0.2.1 から使える機能です。
+
+```text
+地図の System (transformations_map.conf、ポート 8000)
+map (PeriodicExecutionAnchor, 10 Hz)
+ ┊  map → odom の Transform はロボットの System が持ち、map の位置を取りに来る (写し)
+ロボットの System (transformations_robot.conf、ポート 8001)
+└─ odom (StaticAnchor) → base0 (台車) → pantilt0 (雲台) → camera0 (カメラ)
+```
+
+`map → odom` の Transform は、子の `odom` を持つロボットの System の設定ファイルに書きます。始点は地図の System の `map` をブローカー付きの ID で書き、取りに行く頻度 `rate` (Hz) と、つながらないときに写しを消すまでの `timeout` (秒) を付けます。地図の System の設定ファイルには `map` を置くだけです。
+
+```yaml
+# transformations_robot.conf (抜粋)
+transforms:
+  - source: http://127.0.0.1:8000/container/map::periodic_anchor
+    destination: odom
+    translation: {x: 1.0, y: 2.0, z: 0.0}
+    rate: 10.0
+    timeout: 3.0
+```
+
+2 つの端末で、地図の System、ロボットの System の順に起動します (逆の順でも、地図の System が起動した時点で取り込みが始まります)。
+
+```sh
+juiz -f transformations_map.conf -d
+juiz -f transformations_robot.conf -d
+```
+
+別の端末で、上と同じく台車を動かし雲台を回します (ロボットの System はポート 8001)。
+
+```sh
+juiz container-process call "http://127.0.0.1:8001/container_process/move0::mobile_base_move:base0" '{"vx": 1.0, "dt": 1.0}' -p
+juiz container-process call "http://127.0.0.1:8001/container_process/pan0::pantilt_set_pan:pantilt0" '{"pan": 1.5707963267948966}' -p
+```
+
+ロボットの System には `map` がありませんが、名前 `map` は地図の System の `map` の写しに解決します。基準 (`frame_id`) は写しの ID です。
+
+```sh
+juiz -s http://127.0.0.1:8001 container pose camera0 --reference map
+# => position: x=2.1, y=2.05, z=0.32、frame_id: http://127.0.0.1:8000/container/map::periodic_anchor
+juiz -s http://127.0.0.1:8001 transform list --long
+# http://127.0.0.1:8000/container/map::periodic_anchor -> core://core/container/odom::static_anchor  translation (1, 2, 0)  rotation (0, 0, 0, 1)  (remote: ok)
+# ...
+juiz -s http://127.0.0.1:8001 anchor tree map
+# map  position (0, 0, 0)  orientation (0, 0, 0, 1)
+# └─ odom  position (1, 2, 0)  orientation (0, 0, 0, 1)
+#    └─ ...
+```
+
+地図の System からも、ロボットの System の Container を ID で指定すれば `map` から見て読めます (ロボットの System に回ります)。地図の System の木にはロボットの部品は入らず、`map` に「取りに来ている System がある」印だけが付きます。
+
+```sh
+juiz container pose "http://127.0.0.1:8001/container/camera0::camera" --reference map
+# => position: x=2.1, y=2.05, z=0.32、frame_id: map
+juiz container list --long
+# /          map   periodic_anchor  http://127.0.0.1:8000/container/map::periodic_anchor
+#     anchor: periodic (10 Hz)
+#     remote child: <ロボットの System の UUID> -> core://core/container/odom::static_anchor
+```
+
+地図の System を止めると、ロボットの System は `timeout` (3 秒) の後に写しを消し、`transform list --long` が `(remote: lost)` になります。`map` を基準に読むと「つながらない」エラーになりますが、`odom` を基準にした読み書きはそのまま続けられます。地図の System を起動し直すと、自動で写しが戻ります。
+管理画面 (`http://127.0.0.1:8001/ui`) の「変換木」では、写しが破線と「写し」の印で表示されます。
+
 ### OpenCV: juiz_opencv (任意)
 
 カメラ画像の取得・表示・保存を行うサンプルです。OpenCV (と libclang) のインストールが必要なので、`cargo build` の対象からは外しています。
@@ -497,7 +565,7 @@ juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.2.0"
+juiz_sdk = "0.2.1"
 ```
 
 ```rust
