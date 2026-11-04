@@ -29,6 +29,8 @@ BASE = f"http://127.0.0.1:{PORT}"
 
 # 呼び出しの代わりに (EXECUTE, ID) と書くと、HTTP の /api/process/execute を呼ぶ
 EXECUTE = "execute"
+# (PROFILE, ID) と書くと、HTTP の /api/container_process/profile_full で ContainerProcess の情報 (JSON) を読む
+PROFILE = "profile"
 
 # packages/talker_listener の .juizapp を juiz run したときの出力
 PACKAGE_OUTPUT = 'listener: Hello World'
@@ -79,6 +81,8 @@ TRANSFORMATIONS_CASE = ("transformations.conf", [
     # map から見ると map → odom の (1, 2, 0) が足される。map は Periodic なので少し遅れて追いつく
     (["container", "pose", "camera0", "--reference", "map"], PoseNear("map", 2.1, 2.05, 0.32)),
     (["container-process", "call", CAMERA_POSE0, '{"reference": "map"}', "-p"], '"frame_id":"map"'),
+    # camera_pose は読むだけなので readonly の ContainerProcess (OpenJUIZ/juiz#377)。情報に readonly が出る
+    ((PROFILE, "core://core/container_process/camera_pose0::camera_pose:camera0"), '"readonly":true'),
     (["anchor", "tree", "map"], "└─ camera0"),
     (["container", "list", "--long"], "anchor: periodic (10 Hz)"),
 ], "pose_print: x=1.00 y=0.00 yaw=0.0deg (from odom)")
@@ -177,6 +181,13 @@ MISMATCH_ERROR = f"{TWIST2D_ID} cannot be read as {POSE2D_ID}"
 
 def run_call(juiz: str, args) -> tuple[int, str, str]:
     """1 つの呼び出しを行い、(終了コード, 標準出力, 標準エラー) を返す。"""
+    if isinstance(args, tuple) and args[0] == PROFILE:
+        url = f"{BASE}/api/container_process/profile_full?" + urllib.parse.urlencode({"identifier": args[1]})
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                return 0, response.read().decode("utf-8"), ""
+        except OSError as e:
+            return 1, "", str(e)
     if isinstance(args, tuple) and args[0] == EXECUTE:
         url = f"{BASE}/api/process/execute?" + urllib.parse.urlencode({"identifier": args[1]})
         request = urllib.request.Request(url, data=b"{}", method="PATCH",

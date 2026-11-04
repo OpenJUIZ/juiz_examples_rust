@@ -31,7 +31,9 @@ default-members = [
 ]
 
 [workspace.dependencies]
-juiz_sdk = "0.2.1"
-juiz_core = "0.2.1"
-juiz_idl = "0.2.1"
+# readonly の ContainerProcess (component/mobile_robot の camera_pose) は juiz の次の版で入るので、公開までは
+# juiz の main のコミットを使う。公開後は juiz_sdk = "0.2.2" のような版の指定に戻す
+juiz_sdk = { git = "https://github.com/OpenJUIZ/juiz", rev = "9631340ddc68f6543b26185368f6ec8fe3122834" }
+juiz_core = { git = "https://github.com/OpenJUIZ/juiz", rev = "9631340ddc68f6543b26185368f6ec8fe3122834" }
+juiz_idl = { git = "https://github.com/OpenJUIZ/juiz", rev = "9631340ddc68f6543b26185368f6ec8fe3122834" }
 anyhow = "1"

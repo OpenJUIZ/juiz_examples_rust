@@ -654,8 +654,7 @@ dependencies = [
 [[package]]
 name = "juiz_idl"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a06fd6337385c233553f65d6c233a1bdad1827f43292504699066a17b2dff1c0"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9631340ddc68f6543b26185368f6ec8fe3122834#9631340ddc68f6543b26185368f6ec8fe3122834"
 dependencies = [
  "base64",
  "clap",
@@ -668,8 +667,7 @@ dependencies = [
 [[package]]
 name = "juiz_macro"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb965b683c4efbca4c96dff770578404175fabe3484c3ab922e10d57e90e59bc"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9631340ddc68f6543b26185368f6ec8fe3122834#9631340ddc68f6543b26185368f6ec8fe3122834"
 dependencies = [
  "anyhow",
  "litrs",
@@ -691,8 +689,7 @@ dependencies = [
 [[package]]
 name = "juiz_sdk"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "110669fde260132b8643f984f0c30a3ec884aebf96f2847570a14bbd79a16f30"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9631340ddc68f6543b26185368f6ec8fe3122834#9631340ddc68f6543b26185368f6ec8fe3122834"
 dependencies = [
  "anyhow",
  "base64",
@@ -712,8 +709,7 @@ dependencies = [
 [[package]]
 name = "juiz_types"
 version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "959be738c3072d3bc78765e768959d59357e291c3595104ef2f876f0a6482214"
+source = "git+https://github.com/OpenJUIZ/juiz?rev=9631340ddc68f6543b26185368f6ec8fe3122834#9631340ddc68f6543b26185368f6ec8fe3122834"
 dependencies = [
  "base64",
  "regex",

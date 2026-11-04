@@ -2,6 +2,7 @@
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
 juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.2.1) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+ただし readonly の ContainerProcess の例 (Transformations のカメラ) は juiz の次の版で入る機能を使うので、公開までは juiz の main のコミットを使います ([読むだけの ContainerProcess](#読むだけの-containerprocess-readonly) を参照)。
 
 ## 必要なもの
 
@@ -433,6 +434,30 @@ juiz anchor tree map
 
 `map` は Periodic なので、書き込みの直後に読むと最大 1 周期 (0.1 秒) 古い値が返ります。`odom` は Static なので、`set_pose` が戻った時点で新しい値になっています。
 管理画面 (`http://127.0.0.1:8000/ui`) の「変換木」でも木と位置姿勢を見られます。
+
+#### 読むだけの ContainerProcess: readonly
+
+カメラの `camera_pose` は位置姿勢を読むだけなので、readonly の ContainerProcess にしています。Container を `&mut ContainerImpl` ではなく `&ContainerImpl` で受け取ると、マクロが readonly にします。
+
+```rust
+#[juiz_component_container_process(container_type = "camera" arguments = {
+    default = { reference = "map" }
+})]
+fn camera_pose(c: &ContainerImpl<Camera>, reference: String) -> JuizResult<Capsule> {
+    Ok(c.pose(&reference)?.into())
+}
+```
+
+juiz は readonly の ContainerProcess を Container の読み出しロックで呼ぶので、同じ Container の readonly 同士は並行に走ります (readonly でないものとは順番に走ります)。readonly の中では `set_pose` を呼べません。
+readonly かどうかは ContainerProcess の情報 (HTTP の API) に出ます。
+
+```sh
+curl "http://127.0.0.1:8000/api/container_process/profile_full?identifier=core://core/container_process/camera_pose0::camera_pose:camera0"
+# => {..."readonly":true,...}
+```
+
+> juiz の次の版 (0.2.1 の次) で入る機能です。公開までは juiz の main のコミットを使います (`Cargo.toml` の `rev`)。juiz コマンドも同じコミットから入れてください:
+> `cargo install juiz_app --git https://github.com/OpenJUIZ/juiz --rev 9631340ddc68f6543b26185368f6ec8fe3122834 --locked`
 
 #### System をまたぐ: transformations_map.conf と transformations_robot.conf
 
