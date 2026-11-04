@@ -1,8 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.2.1) を使うので、juiz のソースを手元に置かずにビルドして試せます。
-ただし readonly の ContainerProcess の例 (Transformations のカメラ) は juiz の次の版で入る機能を使うので、公開までは juiz の main のコミットを使います ([読むだけの ContainerProcess](#読むだけの-containerprocess-readonly) を参照)。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.2.2) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 ## 必要なもの
 
@@ -285,8 +284,8 @@ record Twist2D { double linear = 0.0; double angular = 0.0; }
 > データ型は juiz 0.0.23 から使えます。juiz コマンドと、Python の Process が使う pyjuiz は 0.0.23 以降を入れてください。
 >
 > ```sh
-> cargo install juiz_app --version 0.2.1 --locked
-> pip install pyjuiz==0.2.1
+> cargo install juiz_app --version 0.2.2 --locked
+> pip install pyjuiz==0.2.2
 > ```
 
 Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。
@@ -456,8 +455,7 @@ curl "http://127.0.0.1:8000/api/container_process/profile_full?identifier=core:/
 # => {..."readonly":true,...}
 ```
 
-> juiz の次の版 (0.2.1 の次) で入る機能です。公開までは juiz の main のコミットを使います (`Cargo.toml` の `rev`)。juiz コマンドも同じコミットから入れてください:
-> `cargo install juiz_app --git https://github.com/OpenJUIZ/juiz --rev 9631340ddc68f6543b26185368f6ec8fe3122834 --locked`
+> juiz 0.2.2 から使える機能です。
 
 #### System をまたぐ: transformations_map.conf と transformations_robot.conf
 
@@ -590,7 +588,7 @@ juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.2.1"
+juiz_sdk = "0.2.2"
 ```
 
 ```rust
