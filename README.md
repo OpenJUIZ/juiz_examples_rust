@@ -455,6 +455,8 @@ curl "http://127.0.0.1:8000/api/container_process/profile_full?identifier=core:/
 # => {..."readonly":true,...}
 ```
 
+`juiz container-process info` でも、ContainerProcess の行の下に `readonly` と出ます。
+
 > juiz 0.2.2 から使える機能です。
 
 #### System をまたぐ: transformations_map.conf と transformations_robot.conf
