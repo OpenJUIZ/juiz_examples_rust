@@ -10,6 +10,10 @@ on:
 env:
   # README の手順で使う juiz_app と pyjuiz の版。Cargo.toml の juiz_sdk と合わせる
   JUIZ_VERSION: "0.2.0"
+  # System をまたぐ Transform のサンプル (transformations_robot.conf) は juiz の次の版で入る機能を使うので、
+  # 公開までは juiz コマンドと pyjuiz を juiz の main のコミットから入れる。プラグインは juiz_sdk 0.2.0 のままでよい
+  # (プラグインの C ABI は変わっていない)。公開後は JUIZ_GIT_REV を消し、JUIZ_VERSION の版の指定に戻す
+  JUIZ_GIT_REV: "e28e9297454fa2ff86f5df4a812690c88a5b8722"
 
 jobs:
   examples:
@@ -37,13 +41,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/juiz
-          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}-py314
+          key: juiz-app-${{ env.JUIZ_GIT_REV }}-${{ runner.os }}-${{ runner.arch }}-py314
       - name: juiz コマンドをインストールする
         if: steps.juiz-cache.outputs.cache-hit != 'true'
-        run: cargo install juiz_app --version "$JUIZ_VERSION" --locked
+        run: cargo install juiz_app --git https://github.com/OpenJUIZ/juiz --rev "$JUIZ_GIT_REV" --locked
       # データ型のサンプル (typed_pose.conf) の Python の Process が pyjuiz を使う
       - name: pyjuiz をインストールする
-        run: python3 -m pip install --user --break-system-packages "pyjuiz==${JUIZ_VERSION}"
+        run: python3 -m pip install --user --break-system-packages "pyjuiz @ git+https://github.com/OpenJUIZ/juiz@${JUIZ_GIT_REV}#subdirectory=bindings/pyjuiz"
       - uses: Swatinem/rust-cache@v2
       - name: サンプルをビルドする
         run: cargo build
