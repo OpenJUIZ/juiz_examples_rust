@@ -9,7 +9,7 @@ on:
 
 env:
   # README の手順で使う juiz_app と pyjuiz の版。Cargo.toml の juiz_sdk と合わせる
-  JUIZ_VERSION: "0.2.4"
+  JUIZ_VERSION: "0.2.7"
 
 jobs:
   examples:
@@ -61,7 +61,8 @@ jobs:
   cross-rustc:
     runs-on: ubuntu-latest
     env:
-      OTHER_RUSTC: "1.88.0"
+      # juiz 0.2.5 から juiz_sdk などの rust-version が 1.89 なので、それ以上で stable と違う版にする
+      OTHER_RUSTC: "1.89.0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
