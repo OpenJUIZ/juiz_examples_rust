@@ -461,6 +461,49 @@ curl "http://127.0.0.1:8000/api/container_process/profile_full?identifier=core:/
 
 > juiz 0.2.2 から使える機能です。
 
+#### 3D モデル: 部品の形を付ける
+
+Container に 3D モデルのファイルを付けると、管理画面の「3D」で木を立体で見られます (OpenJUIZ/juiz#385)。設定ファイルの Container に `model:` を書くだけで、プラグインのコードは変えません。
+
+> juiz 0.2.8 の次の版から使える機能です。それまでは juiz の main からビルドした juiz コマンドで試せます。
+
+`transformations.conf` (と `transformations_map.conf`・`transformations_robot.conf`) では、形式をひととおり使っています。
+
+| Container | ファイル | 形式 | 書き方の例 |
+|---|---|---|---|
+| `map` (床) | `models/floor.glb` | glTF (.glb) | glTF は Y 上なので、juiz が x 軸まわりに +90° 回して Z 上にそろえる (`up_axis` は書かない) |
+| `base0` (台車) | `models/mobile_base.glb` | glTF (.glb) | 前 (+x) に黄色の三角の印 |
+| `pantilt0` (雲台) | `models/pantilt.sdf` | SDF (手書き) | 円柱と箱を `<pose>` で並べる。`<material>` の無い台座は `color` で塗る |
+| `camera0` (カメラ) | `models/camera.stl` | STL | mm で作ったものなので `scale: 0.001`。原点が背面なので `origin` で 15 mm 後ろにずらす |
+
+```yaml
+  - type_name: camera
+    name: camera0
+    model:
+      path: models/camera.stl          # 設定ファイルからの相対パス
+      scale: 0.001                     # mm → m
+      origin:                          # Container の座標から見たモデルの位置
+        translation: {x: -0.015, y: 0.0, z: 0.0}
+      color: "#e0e0e0"                 # 色を持たない形式の表示色
+```
+
+.glb と .stl は `scripts/make_models.py` が箱と円柱から作ったものです (Python の標準ライブラリだけで動きます。`python3 scripts/make_models.py` で作り直せます)。座標は juiz と同じメートル・x 前・y 左・z 上です。
+
+起動して、モデルの情報と中身を取り出せます。
+
+```sh
+juiz -f transformations.conf -d
+juiz container list --long
+# base0 の行の下に  model: glb 24.2 KiB (mobile_base.glb)
+juiz container model camera0 --info
+# => {"file_name": "camera.stl", "format": "stl", "scale": 0.001, ...}
+juiz container model base0 -o .
+# => wrote: ./mobile_base.glb (24760 bytes, glb)
+juiz model check models/pantilt.sdf      # System を起動せずにファイルを確かめる
+```
+
+管理画面 (`http://127.0.0.1:8000/ui`) の中央の「3D」を押し、右上で Anchor (`map` や `odom`) を選ぶと、台車・雲台・カメラが位置姿勢のとおりに置かれます。台車を動かしたり雲台を回したりすると、表示も追いかけます。System をまたぐ版では、ロボットの System の管理画面で `map(写し)` を選ぶと、地図の System にある床のモデルも一緒に出ます。
+
 #### System をまたぐ: transformations_map.conf と transformations_robot.conf
 
 上の木を、地図の System とロボットの System の 2 つに分けた版です。地図 (`map`) を持つ System と、台車・雲台・カメラを持つ System を別のプロセスで動かし、ロボットの System から `map` を基準に読めます。
@@ -578,9 +621,11 @@ juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
 | `component/` | 複数の要素を 1 つのライブラリにまとめた Component のサンプル (`mobile_robot` は Transformations の部品) |
 | `types/` | 4 つのサンプルリポジトリで共通に使う型 (JIDL) |
 | `python/` | データ型のサンプルで Rust の Process とつなぐ Python の Process |
+| `models/` | Transformations のサンプルの部品の 3D モデル (.glb・.stl・手書きの .sdf) |
 | `*.conf` | 各サンプルを動かすための juiz の設定ファイル |
 | `packages/` | `.juizapp` にするアプリのマニフェストと設定ファイル |
 | `scripts/make_packages.py` | ビルドしたプラグインを `packages/` のアプリに写し、`dist/` に `.juizapp` を作るスクリプト |
+| `scripts/make_models.py` | `models/` の .glb と .stl を箱と円柱から作るスクリプト |
 | `tests/test_examples.py` | 上のサンプルを起動して呼び出し、結果を確かめるテスト (`cargo build` のあと `python3 tests/test_examples.py`。データ型のサンプルのために pyjuiz が要る)。CI でも実行する |
 
 ## 自分で書くときは
