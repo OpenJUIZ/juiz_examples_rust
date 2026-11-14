@@ -10,6 +10,9 @@ on:
 env:
   # README の手順で使う juiz_app と pyjuiz の版。Cargo.toml の juiz_sdk と合わせる
   JUIZ_VERSION: "0.2.8"
+  # Container の 3D モデル (OpenJUIZ/juiz#385) は juiz の次の版で入るので、公開までは juiz コマンドだけ main のコミットから入れる。
+  # 公開 (OpenJUIZ/juiz#386) の後に消して、JUIZ_VERSION の版に戻す
+  JUIZ_GIT_REV: "408a5e4b899dea184c2a590b50e86ed83ab8201e"
 
 jobs:
   examples:
@@ -37,10 +40,10 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/juiz
-          key: juiz-app-${{ env.JUIZ_VERSION }}-${{ runner.os }}-${{ runner.arch }}-py314
+          key: juiz-app-${{ env.JUIZ_GIT_REV }}-${{ runner.os }}-${{ runner.arch }}-py314
       - name: juiz コマンドをインストールする
         if: steps.juiz-cache.outputs.cache-hit != 'true'
-        run: cargo install juiz_app --version "$JUIZ_VERSION" --locked
+        run: cargo install --git https://github.com/OpenJUIZ/juiz --rev "$JUIZ_GIT_REV" juiz_app --locked
       # データ型のサンプル (typed_pose.conf) の Python の Process が pyjuiz を使う
       - name: pyjuiz をインストールする
         run: python3 -m pip install --user --break-system-packages "pyjuiz==${JUIZ_VERSION}"
