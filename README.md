@@ -1,7 +1,7 @@
 # juiz_examples_rust
 
 ロボット・IoT 向けミドルウェア [juiz](https://github.com/sugarsweetrobotics/juiz) の Rust 版サンプル集です。
-juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.2.8) を使うので、juiz のソースを手元に置かずにビルドして試せます。
+juiz 本体は crates.io で公開されている版 ([juiz_sdk](https://crates.io/crates/juiz_sdk) / [juiz_app](https://crates.io/crates/juiz_app) 0.2.9) を使うので、juiz のソースを手元に置かずにビルドして試せます。
 
 > **自分の部品を新しく作り始めるときは**、サンプルを写す代わりに `juiz pkg create my_robot -b rust` で雛形を作れます (juiz 0.2.6 から)。ビルド・起動・呼び出し・`.juizapp` での配布までそのまま通る形で、SDK の版も `juiz` コマンドと同じ版で書かれます。詳しくは公式サイトの [雛形から始める (juiz pkg)](https://openjuiz.github.io/ja/guides/pkg/) を見てください。
 
@@ -286,8 +286,8 @@ record Twist2D { double linear = 0.0; double angular = 0.0; }
 > データ型は juiz 0.0.23 から使えます。juiz コマンドと、Python の Process が使う pyjuiz は 0.0.23 以降を入れてください。
 >
 > ```sh
-> cargo install juiz_app --version 0.2.8 --locked
-> pip install pyjuiz==0.2.8
+> cargo install juiz_app --version 0.2.9 --locked
+> pip install pyjuiz==0.2.9
 > ```
 
 Rust の Process [process/pose_move](process/pose_move/src/lib.rs) は、`build.rs` で types/geometry.jidl から作った型をそのまま引数と戻り値に使います。
@@ -465,7 +465,7 @@ curl "http://127.0.0.1:8000/api/container_process/profile_full?identifier=core:/
 
 Container に 3D モデルのファイルを付けると、管理画面の「3D」で木を立体で見られます (OpenJUIZ/juiz#385)。設定ファイルの Container に `model:` を書くだけで、プラグインのコードは変えません。
 
-> juiz 0.2.8 の次の版から使える機能です。それまでは juiz の main からビルドした juiz コマンドで試せます。
+> juiz 0.2.9 から使える機能です。
 
 `transformations.conf` (と `transformations_map.conf`・`transformations_robot.conf`) では、形式をひととおり使っています。
 
@@ -637,7 +637,7 @@ juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
 crate-type = ["cdylib"]
 
 [dependencies]
-juiz_sdk = "0.2.8"
+juiz_sdk = "0.2.9"
 ```
 
 ```rust
