@@ -85,6 +85,11 @@ TRANSFORMATIONS_CASE = ("transformations.conf", [
     ((PROFILE, "core://core/container_process/camera_pose0::camera_pose:camera0"), '"readonly":true'),
     (["anchor", "tree", "map"], "└─ camera0"),
     (["container", "list", "--long"], "anchor: periodic (10 Hz)"),
+    # 3D モデル (OpenJUIZ/juiz#385)。台車は .glb、雲台は手書きの SDF、カメラは mm の .stl
+    (["container", "model", "base0", "--info"], '"format": "glb"'),
+    (["container", "model", "camera0", "--info"], '"scale": 0.001'),
+    (["container", "list", "--long"], "model: sdf"),
+    (["model", "check", "models/pantilt.sdf"], "\nOK"),
 ], "pose_print: x=1.00 y=0.00 yaw=0.0deg (from odom)")
 
 # System をまたぐ Transform のサンプル (transformations_map.conf と transformations_robot.conf、OpenJUIZ/juiz#417)。
@@ -105,6 +110,9 @@ CROSS_SYSTEM_ROBOT_CALLS = [
       '{"reference": "map"}', "-p"], f'"frame_id":"{MAP_REPLICA}"'),
     (["-s", ROBOT, "transform", "list", "--long"], "(remote: ok)"),
     (["-s", ROBOT, "anchor", "tree", "map"], "└─ camera0"),
+    # 写しの map のモデル (床) は、ロボットの System を通して地図の System から取る (OpenJUIZ/juiz#385)
+    (["-s", ROBOT, "container", "model", f"{BASE}/container/map::periodic_anchor", "--info"],
+     '"file_name": "floor.glb"'),
 ]
 CROSS_SYSTEM_MAP_CALLS = [
     # 地図の System から、ロボットの System の camera0 を map から見て読む (ロボットの System に回る)
