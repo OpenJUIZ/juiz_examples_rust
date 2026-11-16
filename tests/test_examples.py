@@ -29,7 +29,7 @@ BASE = f"http://127.0.0.1:{PORT}"
 
 # 呼び出しの代わりに (EXECUTE, ID) と書くと、HTTP の /api/process/execute を呼ぶ
 EXECUTE = "execute"
-# (PROFILE, ID) と書くと、HTTP の /api/container_process/profile_full で ContainerProcess の情報 (JSON) を読む
+# (PROFILE, ID) と書くと、HTTP の /api/container_process/profile で ContainerProcess の情報 (JSON) を読む
 PROFILE = "profile"
 
 # packages/talker_listener の .juizapp を juiz run したときの出力
@@ -190,7 +190,7 @@ MISMATCH_ERROR = f"{TWIST2D_ID} cannot be read as {POSE2D_ID}"
 def run_call(juiz: str, args) -> tuple[int, str, str]:
     """1 つの呼び出しを行い、(終了コード, 標準出力, 標準エラー) を返す。"""
     if isinstance(args, tuple) and args[0] == PROFILE:
-        url = f"{BASE}/api/container_process/profile_full?" + urllib.parse.urlencode({"identifier": args[1]})
+        url = f"{BASE}/api/container_process/profile?" + urllib.parse.urlencode({"identifier": args[1]})
         try:
             with urllib.request.urlopen(url, timeout=30) as response:
                 return 0, response.read().decode("utf-8"), ""
