@@ -605,6 +605,8 @@ juiz run dist/talker_listener-0.1.0-x86_64-unknown-linux-gnu.juizapp
 # listener: Hello World
 ```
 
+> juiz 0.3.0 から、`juiz associate` を 1 回実行しておくと `.juizapp` をダブルクリックで起動できます。ポートが使われていたときや、依存する基礎につながらないときは、起動した端末で選び直せます。詳しくは公式サイトの [アプリの配布 (.juizapp)](https://openjuiz.github.io/ja/guides/app-package/#ダブルクリックで起動する) を見てください。
+
 `packages/talker_listener/` に置くのはマニフェスト `juizapp.yaml` と設定ファイル `app.conf` だけです。`app.conf` はプラグインを `path: "plugins/{target}"` で参照し、`scripts/make_packages.py` が `target/debug` のプラグインを `plugins/<この機械のターゲット>/` に写してから `juiz pack --target <ターゲット>` を呼びます。
 タグ (`v*`) を付けると、CI が Linux (x86_64) と macOS (arm64) で作った `.juizapp` を [Releases](https://github.com/OpenJUIZ/juiz_examples_rust/releases) に載せます。
 
